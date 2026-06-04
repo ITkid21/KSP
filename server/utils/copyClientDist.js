@@ -3,6 +3,7 @@ const path = require('path');
 
 const src = path.resolve(__dirname, '..', '..', 'client', 'dist');
 const dest = path.resolve(__dirname, '..', 'dist');
+const rootDest = path.resolve(__dirname, '..', '..', 'dist');
 
 function copyFolderSync(from, to) {
   if (!fs.existsSync(from)) {
@@ -24,6 +25,8 @@ function copyFolderSync(from, to) {
   });
 }
 
-console.log(`Copying client/dist from ${src} to ${dest}...`);
+console.log(`Copying client/dist to server/dist...`);
 copyFolderSync(src, dest);
+console.log(`Copying client/dist to root/dist...`);
+copyFolderSync(src, rootDest);
 console.log('Copy complete!');
