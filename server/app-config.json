@@ -1,0 +1,11 @@
+{
+  "command": "node index.js",
+  "stack": "node20",
+  "memory": 256,
+  "platform": "nodejs",
+  "env_variables": {
+    "NODE_ENV": "production",
+    "JWT_SECRET": "ksp_crime_intel_platform_secret_key_2024_secure",
+    "JWT_EXPIRES_IN": "24h"
+  }
+}

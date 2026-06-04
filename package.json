@@ -1,0 +1,17 @@
+{
+  "name": "ksp-crime-intelligence-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:client": "npm install --prefix client",
+    "install:server": "npm install --prefix server",
+    "install:all": "npm run install:client && npm run install:server",
+    "build:client": "npm run build --prefix client",
+    "copy:client": "node server/utils/copyClientDist.js",
+    "build": "npm run build:client && npm run copy:client",
+    "start": "node server/index.js",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "seed": "npm run seed --prefix server"
+  }
+}

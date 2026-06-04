@@ -1,0 +1,132 @@
+district,latitude,longitude,overall_risk,crime_type,cases,severity
+Bengaluru Urban,12.9716,77.5946,critical,Theft,18400,critical
+Bengaluru Urban,12.9716,77.5946,critical,Cyber Crime,46120,critical
+Bengaluru Urban,12.9716,77.5946,critical,Cheating / Financial Fraud,5200,high
+Bengaluru Urban,12.9716,77.5946,critical,Molestation,7800,high
+Bengaluru Urban,12.9716,77.5946,critical,Murder,980,high
+Bengaluru Urban,12.9716,77.5946,critical,Narcotic Drugs (NDPS),4200,high
+Bengaluru Urban,12.9716,77.5946,critical,Kidnapping & Abduction,3900,high
+Bengaluru Urban,12.9716,77.5946,critical,Attempt to Murder,1800,high
+Bengaluru Urban,12.9716,77.5946,critical,POCSO,2800,high
+Bengaluru Urban,12.9716,77.5946,critical,Cruelty by Husband,3400,high
+Bengaluru Rural,13.2257,77.5734,high,Motor Vehicle Accidents (Fatal),1800,high
+Bengaluru Rural,13.2257,77.5734,high,Theft,2100,high
+Bengaluru Rural,13.2257,77.5734,high,Cases of Hurt,1900,high
+Bengaluru Rural,13.2257,77.5734,high,Murder,210,medium
+Mysuru,12.2958,76.6394,high,Theft,4800,high
+Mysuru,12.2958,76.6394,high,Molestation,2200,high
+Mysuru,12.2958,76.6394,high,Cyber Crime,1800,high
+Mysuru,12.2958,76.6394,high,Cases of Hurt,2900,high
+Mysuru,12.2958,76.6394,high,Cheating / Financial Fraud,1200,medium
+Mysuru,12.2958,76.6394,high,POCSO,900,medium
+Kalaburagi,17.3297,76.8343,critical,Murder,620,critical
+Kalaburagi,17.3297,76.8343,critical,Cases of Hurt,4200,critical
+Kalaburagi,17.3297,76.8343,critical,SC/ST Atrocities,2800,critical
+Kalaburagi,17.3297,76.8343,critical,Kidnapping & Abduction,1800,high
+Kalaburagi,17.3297,76.8343,critical,Attempt to Murder,950,high
+Kalaburagi,17.3297,76.8343,critical,Riots,1200,high
+Kalaburagi,17.3297,76.8343,critical,POCSO,1100,high
+Kalaburagi,17.3297,76.8343,critical,Narcotic Drugs (NDPS),900,high
+Raichur,16.2012,77.3566,critical,Murder,490,critical
+Raichur,16.2012,77.3566,critical,SC/ST Atrocities,2100,critical
+Raichur,16.2012,77.3566,critical,Cases of Hurt,3100,high
+Raichur,16.2012,77.3566,critical,Cruelty by Husband,1200,high
+Raichur,16.2012,77.3566,critical,Kidnapping & Abduction,900,high
+Raichur,16.2012,77.3566,critical,POCSO,780,high
+Vijayapura,16.8302,75.71,high,Murder,420,critical
+Vijayapura,16.8302,75.71,high,Cases of Hurt,2800,high
+Vijayapura,16.8302,75.71,high,SC/ST Atrocities,1600,high
+Vijayapura,16.8302,75.71,high,Cruelty by Husband,1100,high
+Vijayapura,16.8302,75.71,high,POCSO,850,high
+Vijayapura,16.8302,75.71,high,Riots,700,medium
+Belagavi,15.8497,74.4977,high,Theft,3200,high
+Belagavi,15.8497,74.4977,high,Cases of Hurt,3500,high
+Belagavi,15.8497,74.4977,high,Narcotic Drugs (NDPS),1800,high
+Belagavi,15.8497,74.4977,high,Kidnapping & Abduction,1200,high
+Belagavi,15.8497,74.4977,high,Molestation,1600,high
+Belagavi,15.8497,74.4977,high,Riots,900,medium
+Hubballi-Dharwad,15.3647,75.124,high,Theft,2900,high
+Hubballi-Dharwad,15.3647,75.124,high,Cheating / Financial Fraud,1500,high
+Hubballi-Dharwad,15.3647,75.124,high,Cases of Hurt,2400,high
+Hubballi-Dharwad,15.3647,75.124,high,Motor Vehicle Accidents (Non-Fatal),3800,high
+Hubballi-Dharwad,15.3647,75.124,high,Cyber Crime,900,medium
+Mangaluru (Dakshina Kannada),12.9141,74.856,critical,Narcotic Drugs (NDPS),2200,critical
+Mangaluru (Dakshina Kannada),12.9141,74.856,critical,Riots,1800,critical
+Mangaluru (Dakshina Kannada),12.9141,74.856,critical,Attempt to Murder,980,high
+Mangaluru (Dakshina Kannada),12.9141,74.856,critical,Theft,2100,high
+Mangaluru (Dakshina Kannada),12.9141,74.856,critical,Murder,310,high
+Mangaluru (Dakshina Kannada),12.9141,74.856,critical,Molestation,1200,high
+Uttara Kannada,14.7937,74.6934,high,Narcotic Drugs (NDPS),1900,high
+Uttara Kannada,14.7937,74.6934,high,Cases of Hurt,1400,high
+Uttara Kannada,14.7937,74.6934,high,SC/ST Atrocities,700,medium
+Uttara Kannada,14.7937,74.6934,high,Attempt to Murder,480,medium
+Udupi,13.3409,74.7421,medium,Riots,980,high
+Udupi,13.3409,74.7421,medium,Theft,1200,medium
+Udupi,13.3409,74.7421,medium,Cases of Hurt,1100,medium
+Udupi,13.3409,74.7421,medium,Narcotic Drugs (NDPS),600,medium
+Shivamogga,13.9299,75.5681,high,Motor Vehicle Accidents (Fatal),1600,high
+Shivamogga,13.9299,75.5681,high,Cases of Hurt,2100,high
+Shivamogga,13.9299,75.5681,high,Cruelty by Husband,900,medium
+Shivamogga,13.9299,75.5681,high,Theft,1600,medium
+Tumakuru,13.3379,77.1173,high,Motor Vehicle Accidents (Non-Fatal),4200,high
+Tumakuru,13.3379,77.1173,high,Motor Vehicle Accidents (Fatal),1900,high
+Tumakuru,13.3379,77.1173,high,Theft,2200,high
+Tumakuru,13.3379,77.1173,high,Cyber Crime,1100,medium
+Tumakuru,13.3379,77.1173,high,Molestation,1100,medium
+Hassan,13.0068,76.1004,medium,Motor Vehicle Accidents (Fatal),1200,high
+Hassan,13.0068,76.1004,medium,Cases of Hurt,1500,medium
+Hassan,13.0068,76.1004,medium,Theft,1100,medium
+Chikkamagaluru,13.3161,75.772,medium,Motor Vehicle Accidents (Fatal),980,high
+Chikkamagaluru,13.3161,75.772,medium,Cases of Hurt,1100,medium
+Chikkamagaluru,13.3161,75.772,medium,Theft,900,medium
+Davangere,14.4644,75.9218,high,Motor Vehicle Accidents (Fatal),2100,high
+Davangere,14.4644,75.9218,high,Cases of Hurt,2300,high
+Davangere,14.4644,75.9218,high,Theft,1800,high
+Davangere,14.4644,75.9218,high,Molestation,1100,medium
+Kolar,13.136,78.1294,medium,Motor Vehicle Accidents (Fatal),1100,high
+Kolar,13.136,78.1294,medium,Theft,1400,medium
+Kolar,13.136,78.1294,medium,Cases of Hurt,1200,medium
+Chitradurga,14.2251,76.398,high,Motor Vehicle Accidents (Fatal),1400,high
+Chitradurga,14.2251,76.398,high,Cases of Hurt,1600,high
+Chitradurga,14.2251,76.398,high,SC/ST Atrocities,800,medium
+Yadgir,16.7713,77.1383,high,SC/ST Atrocities,1800,critical
+Yadgir,16.7713,77.1383,high,Murder,320,high
+Yadgir,16.7713,77.1383,high,Cases of Hurt,1400,high
+Koppal,15.3494,76.1549,high,SC/ST Atrocities,1600,critical
+Koppal,15.3494,76.1549,high,Cases of Hurt,1300,high
+Koppal,15.3494,76.1549,high,Cruelty by Husband,700,medium
+Bagalkote,16.1691,75.6961,high,Cases of Hurt,1800,high
+Bagalkote,16.1691,75.6961,high,Murder,280,high
+Bagalkote,16.1691,75.6961,high,Cruelty by Husband,800,medium
+Bagalkote,16.1691,75.6961,high,SC/ST Atrocities,900,medium
+Gadag,15.4166,75.6294,medium,Cases of Hurt,1100,medium
+Gadag,15.4166,75.6294,medium,Theft,900,medium
+Gadag,15.4166,75.6294,medium,Motor Vehicle Accidents (Fatal),700,medium
+Haveri,14.7939,75.3996,medium,Cases of Hurt,1200,medium
+Haveri,14.7939,75.3996,medium,Motor Vehicle Accidents (Fatal),800,medium
+Haveri,14.7939,75.3996,medium,Theft,800,medium
+Bidar,17.9104,77.5199,high,SC/ST Atrocities,1400,high
+Bidar,17.9104,77.5199,high,Murder,290,high
+Bidar,17.9104,77.5199,high,Cases of Hurt,1200,medium
+Bidar,17.9104,77.5199,high,Narcotic Drugs (NDPS),600,medium
+Ballari,15.1394,76.9214,high,Murder,350,high
+Ballari,15.1394,76.9214,high,Cases of Hurt,2200,high
+Ballari,15.1394,76.9214,high,SC/ST Atrocities,900,medium
+Ballari,15.1394,76.9214,high,Narcotic Drugs (NDPS),700,medium
+Chikkaballapura,13.4354,77.7272,medium,Theft,900,medium
+Chikkaballapura,13.4354,77.7272,medium,Cases of Hurt,1000,medium
+Chikkaballapura,13.4354,77.7272,medium,Motor Vehicle Accidents (Fatal),700,medium
+Mandya,12.5218,76.8951,medium,Motor Vehicle Accidents (Non-Fatal),2800,high
+Mandya,12.5218,76.8951,medium,Cases of Hurt,1500,medium
+Mandya,12.5218,76.8951,medium,Theft,1100,medium
+Chamarajanagara,11.9261,76.9437,medium,Cases of Hurt,800,medium
+Chamarajanagara,11.9261,76.9437,medium,SC/ST Atrocities,600,medium
+Chamarajanagara,11.9261,76.9437,medium,POCSO,500,medium
+Kodagu,12.3375,75.8069,low,Motor Vehicle Accidents (Fatal),600,medium
+Kodagu,12.3375,75.8069,low,Narcotic Drugs (NDPS),500,medium
+Kodagu,12.3375,75.8069,low,Theft,500,low
+Tumakuru (Madhugiri),13.6599,77.2094,medium,Motor Vehicle Accidents (Fatal),800,medium
+Tumakuru (Madhugiri),13.6599,77.2094,medium,Theft,700,medium
+Ramanagara,12.7157,77.282,medium,Motor Vehicle Accidents (Non-Fatal),2200,high
+Ramanagara,12.7157,77.282,medium,Theft,900,medium
+Ramanagara,12.7157,77.282,medium,Cases of Hurt,800,medium
