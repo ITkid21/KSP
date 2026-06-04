@@ -34,7 +34,11 @@ class JsonDB {
   }
 
   _save(table) {
-    fs.writeFileSync(this._filePath(table), JSON.stringify(this.cache[table]), 'utf-8');
+    try {
+      fs.writeFileSync(this._filePath(table), JSON.stringify(this.cache[table]), 'utf-8');
+    } catch (err) {
+      console.warn(`[JsonDB] Failed to persist table "${table}" (running in read-only environment, changes will remain in-memory):`, err.message);
+    }
   }
 
   getAll(table) { return this.cache[table] || []; }
