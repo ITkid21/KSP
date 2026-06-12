@@ -1,100 +1,197 @@
+'use strict';
+
 const express = require('express');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { v4: uuidv4 } = require('uuid');
-const db = require('../models/database');
-const { authenticateToken, authorizeRoles } = require('../middleware/auth');
-require('dotenv').config();
-
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'ksp_crime_intel_default_secret';
-const JWT_EXPIRES = process.env.JWT_EXPIRES_IN || '24h';
 
-router.post('/login', (req, res) => {
-  try {
-    const { username, password } = req.body;
-    if (!username || !password) return res.status(400).json({ error: 'Username and password required.' });
+const authService = require('../services/authService');
+const userRepo = require('../repositories/userRepository');
+const auditRepo = require('../repositories/auditRepository');
+const { authenticateToken, authorizeRoles } = require('../middleware/auth');
+const { canManageUsers, canViewAuditLogs } = require('../middleware/roleMiddleware');
 
-    const user = db.findOne('users', u => u.username === username && u.is_active !== 0);
-    if (!user) return res.status(401).json({ error: 'Invalid credentials.' });
+// ─── Helper ────────────────────────────────────────────────────────────────
 
-    if (!bcrypt.compareSync(password, user.password_hash)) return res.status(401).json({ error: 'Invalid credentials.' });
+/**
+ * Wrap async route handlers so unhandled promise rejections are passed to next().
+ */
+const asyncHandler = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role, full_name: user.full_name }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
-    db.update('users', u => u.id === user.id, { last_login: new Date().toISOString() });
-    db.insert('sessions', { id: uuidv4(), user_id: user.id, token, expires_at: new Date(Date.now() + 86400000).toISOString(), created_at: new Date().toISOString() });
-    db.insert('audit_logs', { id: uuidv4(), user_id: user.id, action: 'LOGIN', resource: 'auth', details: 'User logged in', ip_address: req.ip, created_at: new Date().toISOString() });
+/**
+ * Strip password_hash from a user object before sending to client.
+ */
+function safeUser(user) {
+  if (!user) return null;
+  const { password_hash, ...safe } = user;
+  return safe;
+}
 
-    res.json({ token, user: { id: user.id, username: user.username, email: user.email, full_name: user.full_name, role: user.role, department: user.department, badge_number: user.badge_number } });
-  } catch (err) { console.error('Login error:', err); res.status(500).json({ error: 'Internal server error.' }); }
-});
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/auth/login
+// ─────────────────────────────────────────────────────────────────────────────
 
-router.post('/register', authenticateToken, authorizeRoles('super_admin'), (req, res) => {
-  try {
-    const { username, email, password, full_name, role, department, badge_number, phone } = req.body;
-    if (!username || !email || !password || !full_name) return res.status(400).json({ error: 'Required: username, email, password, full_name.' });
+/**
+ * @route   POST /api/auth/login
+ * @access  Public
+ * @body    { username, password }
+ * @returns { token, user }
+ */
+router.post('/login', asyncHandler(async (req, res) => {
+  const { username, password } = req.body;
 
-    if (db.findOne('users', u => u.username === username || u.email === email)) return res.status(409).json({ error: 'Username or email exists.' });
+  if (!username || !password) {
+    return res.status(400).json({ success: false, error: 'username and password are required.' });
+  }
 
-    const id = uuidv4();
-    db.insert('users', { id, username, email, password_hash: bcrypt.hashSync(password, 12), full_name, role: role || 'officer', department, badge_number, phone, is_active: 1, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-    db.insert('audit_logs', { id: uuidv4(), user_id: req.user.id, action: 'CREATE_USER', resource: 'users', resource_id: id, details: `Created user: ${username}`, created_at: new Date().toISOString() });
+  const result = await authService.login(req, username.trim(), password);
+  return res.status(200).json({ success: true, ...result });
+}));
 
-    res.status(201).json({ message: 'User created.', userId: id });
-  } catch (err) { res.status(500).json({ error: 'Internal server error.' }); }
-});
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/auth/logout
+// ─────────────────────────────────────────────────────────────────────────────
 
-router.get('/me', authenticateToken, (req, res) => {
-  try {
-    const user = db.findOne('users', u => u.id === req.user.id);
-    if (!user) return res.status(404).json({ error: 'User not found.' });
-    const { password_hash, ...safe } = user;
-    res.json(safe);
-  } catch (err) { res.status(500).json({ error: 'Internal server error.' }); }
-});
+/**
+ * @route   POST /api/auth/logout
+ * @access  Authenticated (any role)
+ * @returns { message }
+ */
+router.post('/logout', authenticateToken, asyncHandler(async (req, res) => {
+  await authService.logout(req, req.user.id, req.rawToken);
+  return res.status(200).json({ success: true, message: 'Logged out successfully.' });
+}));
 
-router.post('/logout', authenticateToken, (req, res) => {
-  try {
-    db.remove('sessions', s => s.user_id === req.user.id);
-    db.insert('audit_logs', { id: uuidv4(), user_id: req.user.id, action: 'LOGOUT', resource: 'auth', details: 'Logged out', created_at: new Date().toISOString() });
-    res.json({ message: 'Logged out.' });
-  } catch (err) { res.status(500).json({ error: 'Internal server error.' }); }
-});
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/auth/me
+// ─────────────────────────────────────────────────────────────────────────────
 
-router.get('/users', authenticateToken, authorizeRoles('super_admin'), (req, res) => {
-  try {
-    const users = db.getAll('users').map(({ password_hash, ...u }) => u).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    res.json(users);
-  } catch (err) { res.status(500).json({ error: 'Internal server error.' }); }
-});
+/**
+ * @route   GET /api/auth/me
+ * @access  Authenticated (any role)
+ * @returns { user }
+ */
+router.get('/me', authenticateToken, asyncHandler(async (req, res) => {
+  const user = await userRepo.findById(req, req.user.id);
+  if (!user) {
+    return res.status(404).json({ success: false, error: 'User not found.' });
+  }
+  return res.status(200).json({ success: true, user: safeUser(user) });
+}));
 
-router.put('/users/:id', authenticateToken, authorizeRoles('super_admin'), (req, res) => {
-  try {
-    const { full_name, role, department, badge_number, phone, is_active } = req.body;
-    const user = db.findOne('users', u => u.id === req.params.id);
-    if (!user) return res.status(404).json({ error: 'User not found.' });
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/auth/change-password
+// ─────────────────────────────────────────────────────────────────────────────
 
-    const updates = {};
-    if (full_name !== undefined) updates.full_name = full_name;
-    if (role !== undefined) updates.role = role;
-    if (department !== undefined) updates.department = department;
-    if (badge_number !== undefined) updates.badge_number = badge_number;
-    if (phone !== undefined) updates.phone = phone;
-    if (is_active !== undefined) updates.is_active = is_active;
-    updates.updated_at = new Date().toISOString();
+/**
+ * @route   POST /api/auth/change-password
+ * @access  Authenticated (any role — can only change own; ADMIN can change any)
+ * @body    { target_user_id?, old_password?, new_password }
+ */
+router.post('/change-password', authenticateToken, asyncHandler(async (req, res) => {
+  const { target_user_id, old_password, new_password } = req.body;
 
-    db.update('users', u => u.id === req.params.id, updates);
-    db.insert('audit_logs', { id: uuidv4(), user_id: req.user.id, action: 'UPDATE_USER', resource: 'users', resource_id: req.params.id, details: `Updated user`, created_at: new Date().toISOString() });
-    res.json({ message: 'User updated.' });
-  } catch (err) { res.status(500).json({ error: 'Internal server error.' }); }
-});
+  if (!new_password) {
+    return res.status(400).json({ success: false, error: 'new_password is required.' });
+  }
 
-router.delete('/users/:id', authenticateToken, authorizeRoles('super_admin'), (req, res) => {
-  try {
-    if (req.params.id === req.user.id) return res.status(400).json({ error: 'Cannot delete yourself.' });
-    db.update('users', u => u.id === req.params.id, { is_active: 0 });
-    res.json({ message: 'User deactivated.' });
-  } catch (err) { res.status(500).json({ error: 'Internal server error.' }); }
+  // If no target specified, default to self
+  const targetId = target_user_id || req.user.id;
+
+  await authService.changePassword(req, req.user, targetId, old_password || null, new_password);
+  return res.status(200).json({ success: true, message: 'Password changed successfully. All sessions have been invalidated.' });
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/auth/create-user
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @route   POST /api/auth/create-user
+ * @access  ADMIN only
+ * @body    { username, email, password, full_name, role, department, badge_number }
+ * @returns { user }
+ */
+router.post('/create-user', authenticateToken, canManageUsers, asyncHandler(async (req, res) => {
+  const newUser = await authService.createUser(req, req.user, req.body);
+  return res.status(201).json({ success: true, message: 'User created successfully.', user: newUser });
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/auth/users
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @route   GET /api/auth/users
+ * @access  ADMIN only
+ * @returns { users: [] }
+ */
+router.get('/users', authenticateToken, canManageUsers, asyncHandler(async (req, res) => {
+  const users = await userRepo.getAll(req);
+  const safe = users.map(safeUser).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return res.status(200).json({ success: true, users: safe });
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PUT /api/auth/users/:id
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @route   PUT /api/auth/users/:id
+ * @access  ADMIN only
+ * @body    { full_name?, role?, department?, badge_number?, is_active?, email? }
+ */
+router.put('/users/:id', authenticateToken, canManageUsers, asyncHandler(async (req, res) => {
+  await authService.updateUser(req, req.user, req.params.id, req.body);
+  return res.status(200).json({ success: true, message: 'User updated successfully.' });
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DELETE /api/auth/users/:id
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @route   DELETE /api/auth/users/:id
+ * @access  ADMIN only
+ * @desc    Soft-delete (sets is_active = false, invalidates all sessions)
+ */
+router.delete('/users/:id', authenticateToken, canManageUsers, asyncHandler(async (req, res) => {
+  await authService.deactivateUser(req, req.user, req.params.id);
+  return res.status(200).json({ success: true, message: 'User deactivated successfully.' });
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/auth/audit-logs
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @route   GET /api/auth/audit-logs
+ * @access  ADMIN only
+ * @query   ?user_id=<uuid>  (optional filter)
+ * @query   ?action=LOGIN    (optional filter)
+ */
+router.get('/audit-logs', authenticateToken, canViewAuditLogs, asyncHandler(async (req, res) => {
+  const { user_id, action } = req.query;
+  let logs;
+
+  if (user_id) {
+    logs = await auditRepo.getByUserId(req, user_id);
+  } else if (action) {
+    logs = await auditRepo.getByAction(req, action.toUpperCase());
+  } else {
+    logs = await auditRepo.getAll(req);
+  }
+
+  return res.status(200).json({ success: true, logs });
+}));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Global error handler for this router
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.use((err, req, res, _next) => {
+  const status = err.status || 500;
+  const message = err.message || 'Internal server error.';
+  console.error(`[Auth Route Error] ${status} — ${message}`);
+  return res.status(status).json({ success: false, error: message });
 });
 
 module.exports = router;

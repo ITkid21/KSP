@@ -1,11 +1,17 @@
 {
   "command": "node index.js",
+  "buildPath": ".",
   "stack": "node20",
   "memory": 256,
   "platform": "nodejs",
   "env_variables": {
     "NODE_ENV": "production",
     "JWT_SECRET": "ksp_crime_intel_platform_secret_key_2024_secure",
-    "JWT_EXPIRES_IN": "24h"
+    "JWT_EXPIRES_IN": "24h",
+    "ADMIN_BOOTSTRAP_USERNAME": "ksp_admin",
+    "ADMIN_BOOTSTRAP_EMAIL": "admin@ksp.gov.in",
+    "ADMIN_BOOTSTRAP_PASSWORD": "KSP@Admin2024!",
+    "ADMIN_BOOTSTRAP_FULLNAME": "System Administrator",
+    "ADMIN_BOOTSTRAP_BADGE": "KSP-ADMIN-001"
   }
 }

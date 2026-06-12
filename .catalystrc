@@ -1,0 +1,36 @@
+{
+  "defaults": {
+    "project": 1,
+    "env": 1
+  },
+  "actives": {
+    "project": 1,
+    "env": 1
+  },
+  "projects": [
+    {
+      "idx": 1,
+      "id": "43082000000013050",
+      "name": "Polls",
+      "domain": {
+        "id": "50042774083",
+        "name": "polls-60073268226.development"
+      },
+      "timezone": "Asia/Kolkata",
+      "env": [
+        {
+          "idx": 1,
+          "id": "60073268226",
+          "name": "Development",
+          "type": 3
+        },
+        {
+          "idx": 2,
+          "id": "50042807289",
+          "name": "Production",
+          "type": 1
+        }
+      ]
+    }
+  ]
+}

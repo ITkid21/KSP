@@ -1,39 +1,89 @@
-const jwt = require('jsonwebtoken');
-require('dotenv').config();
+'use strict';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'ksp_crime_intel_default_secret';
+const jwtService    = require('../services/jwtService');
+const sessionRepo   = require('../repositories/sessionRepository');
+const userRepo      = require('../repositories/userRepository');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// authenticateToken
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Authenticate JWT token middleware
+ * JWT + Catalyst session + active-user validation middleware.
+ *
+ * Flow:
+ *  1. Extract Bearer token from Authorization header
+ *  2. Verify JWT signature and expiry
+ *  3. Look up the session in Catalyst Data Store (prevents use of logged-out tokens)
+ *  4. Look up the user in Catalyst Data Store (prevents use of deactivated accounts)
+ *  5. Attach req.user (safe payload) and req.rawToken for downstream use
  */
-function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (!token) {
-    return res.status(401).json({ error: 'Access denied. No token provided.' });
+    return res.status(401).json({ success: false, error: 'Access denied. No token provided.' });
   }
 
+  // Step 2 — Verify JWT
+  let decoded;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
+    decoded = jwtService.verify(token);
   } catch (err) {
-    return res.status(403).json({ error: 'Invalid or expired token.' });
+    return res.status(401).json({ success: false, error: 'Invalid or expired token.' });
+  }
+
+  // Step 3 — Validate session exists in Catalyst (not logged out)
+  try {
+    const session = await sessionRepo.findActiveByToken(req, token);
+    if (!session) {
+      return res.status(401).json({ success: false, error: 'Session not found or expired. Please log in again.' });
+    }
+  } catch (sessionErr) {
+    console.error('[Auth Middleware] Session lookup failed:', sessionErr.message);
+    // If Catalyst is unreachable during a transient error, fall through with JWT-only validation
+    // so the service degrades gracefully instead of locking everyone out.
+  }
+
+  // Step 4 — Validate user still exists and is active in Catalyst
+  try {
+    const user = await userRepo.findActiveById(req, decoded.id);
+    if (!user) {
+      return res.status(403).json({ success: false, error: 'Account not found or deactivated.' });
+    }
+
+    // Step 5 — Attach to request
+    req.user     = { ...decoded, role: user.role }; // always use DB role (not JWT claim)
+    req.rawToken = token;
+    next();
+  } catch (userErr) {
+    console.error('[Auth Middleware] User lookup failed:', userErr.message);
+    // Fall back to JWT claim if DB is unreachable
+    req.user     = decoded;
+    req.rawToken = token;
+    next();
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// authorizeRoles  (legacy-compatible helper)
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Role-based authorization middleware
- * @param  {...string} roles - Allowed roles
+ * Simple role guard.  Accepts roles in any case.
+ * Prefer roleMiddleware.js exports for semantic readability in routes.
+ * @param {...string} roles
  */
 function authorizeRoles(...roles) {
+  const normalised = roles.map(r => r.toUpperCase());
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Not authenticated.' });
+      return res.status(401).json({ success: false, error: 'Not authenticated.' });
     }
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Insufficient permissions.' });
+    const userRole = (req.user.role || '').toUpperCase();
+    if (!normalised.includes(userRole)) {
+      return res.status(403).json({ success: false, error: `Insufficient permissions. Required: ${roles.join(', ')}.` });
     }
     next();
   };

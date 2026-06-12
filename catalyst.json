@@ -1,10 +1,12 @@
 {
-  "appsail": {
-    "source": "server",
-    "name": "ksp-crime-intel",
-    "ignore": [
-      "node_modules",
-      ".env"
-    ]
-  }
+  "appsail": [
+    {
+      "name": "ksp-crime-intel",
+      "source": "server",
+      "ignore": [
+        "node_modules",
+        ".env"
+      ]
+    }
+  ]
 }

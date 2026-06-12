@@ -392,4 +392,38 @@ router.get('/predictions/explain', authenticateToken, (req, res) => {
   }
 });
 
+/**
+ * GET /api/copilot/test-db - Test database connection with Catalyst ZCQL
+ */
+router.get('/test-db', async (req, res) => {
+  try {
+    console.log("Catalyst App:", req.catalystApp);
+
+    if (!req.catalystApp) {
+      return res.status(500).json({
+        success: false,
+        error: "Catalyst SDK not initialized"
+      });
+    }
+
+    const zcql = req.catalystApp.zcql();
+
+    const result = await zcql.executeZCQLQuery(
+      "SELECT * FROM system_users LIMIT 1"
+    );
+
+    res.json({
+      success: true,
+      recordsFound: result.length,
+      data: result
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
 module.exports = router;
