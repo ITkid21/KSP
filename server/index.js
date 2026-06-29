@@ -13,6 +13,7 @@ const PORT = process.env.X_ZOHO_CATALYST_LISTEN_PORT || process.env.PORT || 5000
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.text({ type: ['text/csv', 'text/plain'], limit: '50mb' })); // CSV ingestion
 
 // Catalyst SDK — initialize per request so req.catalyst is always available
 const { catalystMiddleware } = require('./services/catalystService');
