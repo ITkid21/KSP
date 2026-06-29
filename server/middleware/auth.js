@@ -60,6 +60,7 @@ async function authenticateToken(req, res, next) {
     // Step 5 — Attach to request
     req.user     = { ...decoded, role: user.role }; // always use DB role (not JWT claim)
     req.rawToken = token;
+    console.log('Authenticated User:', req.user);
     next();
   } catch (userErr) {
     console.error('[Auth Middleware] User lookup failed:', userErr.message);

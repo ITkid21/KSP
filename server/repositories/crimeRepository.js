@@ -103,6 +103,7 @@ class CrimeRepository {
   async insertCrime(req, record, importedBy = 'system') {
     const rowData = buildRow(record, importedBy);
 
+    console.log('incident_date =', rowData.incident_date);
     console.log('========== crime_raw INSERT ==========');
     console.log(JSON.stringify(rowData, null, 2));
 

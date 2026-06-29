@@ -58,6 +58,14 @@ function parseCSVLine(line) {
  * @param {string} csvText
  * @returns {{ headers: string[], rows: Object[] }}
  */
+function normalizeHeader(name) {
+  return String(name || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/\-+/g, '_');
+}
+
 function parseCSV(csvText) {
   const text     = (csvText || '').replace(/^\uFEFF/, ''); // strip BOM
   const lines    = text.split('\n');
@@ -65,7 +73,7 @@ function parseCSV(csvText) {
 
   if (nonEmpty.length === 0) return { headers: [], rows: [] };
 
-  const headers = parseCSVLine(nonEmpty[0]).map(h => h.toLowerCase().trim());
+  const headers = parseCSVLine(nonEmpty[0]).map(normalizeHeader);
   const rows    = [];
 
   for (let i = 1; i < nonEmpty.length; i++) {
@@ -94,21 +102,180 @@ function parseCSV(csvText) {
  * @param {Object} rawRow - Raw CSV row object (all values are strings)
  * @returns {Object} Typed crime record ready for validateCrimeRecord() and insertMany()
  */
+function normalizeSeverity(value) {
+  if (value === undefined || value === null) return 1;
+  const normalized = String(value).trim();
+  if (normalized === '') return 1;
+
+  const severityMap = {
+    low:      1,
+    medium:   2,
+    high:     3,
+    critical: 4,
+  };
+
+  const mapped = severityMap[normalized.toLowerCase()];
+  if (mapped !== undefined) return mapped;
+
+  const numeric = parseInt(normalized, 10);
+  return Number.isNaN(numeric) ? 1 : numeric;
+}
+
+function normalizeDateValue(value) {
+  console.log('[CSV] Raw date:', value);
+
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) {
+      console.log('[CSV] Parsed date:', '');
+      return '';
+    }
+    const formattedDate = formatDateToYYYYMMDD(value);
+    console.log('[CSV] Parsed date:', formattedDate);
+    return formattedDate;
+  }
+
+  const raw = String(value || '').trim();
+  if (!raw) {
+    console.log('[CSV] Parsed date:', '');
+    return '';
+  }
+
+  const numericValue = Number(raw);
+  const isExcelSerial = /^[0-9]+(?:\.[0-9]+)?$/.test(raw) && numericValue > 0 && numericValue < 100000;
+  if (isExcelSerial) {
+    const excelDate = excelSerialToDate(numericValue);
+    if (excelDate) {
+      const formattedDate = formatDateToYYYYMMDD(excelDate);
+      console.log('[CSV] Parsed date:', formattedDate);
+      return formattedDate;
+    }
+  }
+
+  const normalized = raw.replace(/\//g, '-').trim();
+  const isoMatch = /^\d{4}-\d{1,2}-\d{1,2}$/.test(normalized);
+  if (isoMatch) {
+    const parsed = new Date(normalized);
+    if (!isNaN(parsed.getTime())) {
+      const formattedDate = formatDateToYYYYMMDD(parsed);
+      console.log('[CSV] Parsed date:', formattedDate);
+      return formattedDate;
+    }
+  }
+
+  const parts = normalized.split('-');
+  if (parts.length === 3) {
+    const [p1, p2, p3] = parts;
+    const n1 = Number(p1);
+    const n2 = Number(p2);
+    const n3 = Number(p3);
+
+    if (!Number.isNaN(n1) && !Number.isNaN(n2) && !Number.isNaN(n3)) {
+      let parsed;
+      if (/^\d{4}$/.test(p1)) {
+        parsed = new Date(normalized);
+      } else if (/^\d{4}$/.test(p3)) {
+        if (p1.length > 2 || Number(p1) > 12) {
+          parsed = new Date(n3, n2 - 1, n1);
+        } else {
+          parsed = new Date(n3, n1 - 1, n2);
+        }
+      }
+
+      if (parsed && !isNaN(parsed.getTime())) {
+        const formattedDate = formatDateToYYYYMMDD(parsed);
+        console.log('[CSV] Parsed date:', formattedDate);
+        return formattedDate;
+      }
+    }
+  }
+
+  const parsed = new Date(raw);
+  if (!isNaN(parsed.getTime())) {
+    const formattedDate = formatDateToYYYYMMDD(parsed);
+    console.log('[CSV] Parsed date:', formattedDate);
+    return formattedDate;
+  }
+
+  console.log('[CSV] Parsed date:', '');
+  return '';
+}
+
+function formatDateToYYYYMMDD(date) {
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return '';
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function excelSerialToDate(serial) {
+  const days = Number(serial);
+  if (Number.isNaN(days) || days <= 0) return null;
+
+  const wholeDays = Math.floor(days);
+  const timeFraction = days - wholeDays;
+
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const excelEpoch = Date.UTC(1899, 11, 31);
+
+  let dateMs = excelEpoch + wholeDays * msPerDay;
+  if (wholeDays >= 60) {
+    dateMs -= msPerDay; // Excel 1900 leap year bug correction
+  }
+
+  dateMs += Math.round(timeFraction * msPerDay);
+  const date = new Date(dateMs);
+  return isNaN(date.getTime()) ? null : date;
+}
+
 function mapRowToRecord(rawRow) {
+  const incidentDateValue = normalizeDateValue(rawRow.incident_date || rawRow.date);
+
   return {
     crime_id:      (rawRow.crime_id      || '').trim(),
     crime_type:    (rawRow.crime_type    || '').trim(),
     latitude:      rawRow.latitude  !== '' ? parseFloat(rawRow.latitude)   : NaN,
     longitude:     rawRow.longitude !== '' ? parseFloat(rawRow.longitude)  : NaN,
     district:      (rawRow.district      || '').trim(),
-    severity:      rawRow.severity  !== '' ? parseInt(rawRow.severity, 10) : NaN,
-    incident_date: (rawRow.incident_date || '').trim() || new Date().toISOString().slice(0, 10),
-    status:        (rawRow.status        || 'raw').trim(),
+    severity:      normalizeSeverity(rawRow.severity),
+    incident_date: incidentDateValue || new Date().toISOString().slice(0, 10),
+    status:        (rawRow.status || 'raw').trim(),
   };
 }
 
-// Required CSV column headers (matched after lowercasing the header row)
-const REQUIRED_HEADERS = ['crime_id', 'crime_type', 'latitude', 'longitude', 'district', 'severity'];
+function validateCsvRecord(record) {
+  const errors = [];
+
+  if (!record || typeof record !== 'object') {
+    return { valid: false, errors: ['Record must be a valid object.'] };
+  }
+
+  if (!record.crime_id || typeof record.crime_id !== 'string' || record.crime_id.trim() === '') {
+    errors.push('Missing or invalid crime_id. It must be a non-empty string.');
+  }
+
+  if (!record.crime_type || typeof record.crime_type !== 'string' || record.crime_type.trim() === '') {
+    errors.push('Missing or invalid crime_type. It must be a non-empty string.');
+  }
+
+  const lat = Number(record.latitude);
+  if (isNaN(lat) || lat < -90 || lat > 90) {
+    errors.push('Invalid latitude. It must be a number between -90 and 90.');
+  }
+
+  const lng = Number(record.longitude);
+  if (isNaN(lng) || lng < -180 || lng > 180) {
+    errors.push('Invalid longitude. It must be a number between -180 and 180.');
+  }
+
+  if (!record.district || typeof record.district !== 'string' || record.district.trim() === '') {
+    errors.push('Missing or invalid district. It must be a non-empty string.');
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+// Required CSV column headers (matched after normalizing the header row)
+const REQUIRED_HEADERS = ['crime_id', 'crime_type', 'latitude', 'longitude', 'district'];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /api/import/crimes
@@ -230,16 +397,17 @@ router.post('/crimes', authenticateToken, requireRole('ADMIN'), asyncHandler(asy
  *     X-Filename: your_file.csv   (stored in import_history.filename)
  *
  *   Required CSV columns (case-insensitive):
- *     crime_id, crime_type, latitude, longitude, district, severity
+ *     crime_id, crime_type, latitude, longitude, district
  *
  *   Optional CSV columns:
+ *     severity        (Low|Medium|High|Critical or integer 1-5, defaults to 1)
  *     incident_date   (YYYY-MM-DD — defaults to today)
  *     status          (defaults to "raw")
  *
  *   Example CSV:
  *     crime_id,crime_type,latitude,longitude,district,severity,incident_date
  *     C-2023-001,Theft,12.9716,77.5946,Central,3,2023-06-01
- *     C-2023-002,Robbery,13.0068,77.5748,North,4,2023-06-02
+ *     C-2023-002,Robbery,13.0068,77.5948,North,4,2023-06-02
  *
  * Success (201):
  *   {
@@ -317,7 +485,7 @@ router.post('/csv', authenticateToken, requireRole('ADMIN'), asyncHandler(async 
 
   for (let i = 0; i < rows.length; i++) {
     const record    = mapRowToRecord(rows[i]);
-    const { valid, errors } = validateCrimeRecord(record);
+    const { valid, errors } = validateCsvRecord(record);
 
     if (valid) {
       validRows.push(record);
