@@ -1,0 +1,14 @@
+$kind: http-request
+method: POST
+url: 'http://localhost:5000/api/auth/login'
+order: 100
+headers:
+  - key: Content-Type
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "username": "admin",
+      "password": "password123"
+    }

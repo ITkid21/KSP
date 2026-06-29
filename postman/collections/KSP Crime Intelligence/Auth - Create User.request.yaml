@@ -1,0 +1,21 @@
+$kind: http-request
+method: POST
+url: 'http://localhost:5000/api/auth/create-user'
+order: 140
+headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'
+  - key: Content-Type
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "username": "new.user",
+      "email": "new.user@example.com",
+      "password": "password123",
+      "full_name": "New User",
+      "role": "OFFICER",
+      "department": "Operations",
+      "badge_number": "BN-1001"
+    }

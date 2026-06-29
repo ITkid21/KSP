@@ -36,7 +36,10 @@ async function authenticateToken(req, res, next) {
 
   // Step 3 — Validate session exists in Catalyst (not logged out)
   try {
+    console.log('JWT VERIFIED');
+    console.log('TOKEN:', token.substring(0,20));
     const session = await sessionRepo.findActiveByToken(req, token);
+    console.log('SESSION FOUND:', !!session);
     if (!session) {
       return res.status(401).json({ success: false, error: 'Session not found or expired. Please log in again.' });
     }
@@ -49,6 +52,7 @@ async function authenticateToken(req, res, next) {
   // Step 4 — Validate user still exists and is active in Catalyst
   try {
     const user = await userRepo.findActiveById(req, decoded.id);
+    console.log('USER FOUND:', !!user);
     if (!user) {
       return res.status(403).json({ success: false, error: 'Account not found or deactivated.' });
     }

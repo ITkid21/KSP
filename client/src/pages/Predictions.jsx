@@ -92,7 +92,7 @@ export default function Predictions() {
           <p style={{ fontSize: '12px', color: '#94a3b8' }}>AI-driven forecast models for proactive deployment</p>
         </div>
         
-        {user && (user.role === 'super_admin' || user.role === 'analyst') && (
+        {user && (user.role === 'super_admin' || user.role === 'ADMIN' || user.role === 'analyst' || user.role === 'ANALYST') && (
           <button 
             className="btn btn-primary" 
             onClick={handleGenerate}

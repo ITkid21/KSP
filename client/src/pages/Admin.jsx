@@ -8,7 +8,7 @@ export default function Admin() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddUser, setShowAddUser] = useState(false);
-  const [newUser, setNewUser] = useState({ username: '', password: '', email: '', full_name: '', role: 'officer', department: '', badge_number: '' });
+  const [newUser, setNewUser] = useState({ username: '', password: '', email: '', full_name: '', role: 'OFFICER', department: '', badge_number: '' });
 
   const fetchData = async () => {
     setLoading(true);
@@ -17,9 +17,12 @@ export default function Admin() {
     try {
       if (activeTab === 'users') {
         const res = await fetch(`${API_URL}/auth/users`, { headers });
-        if (res.ok) setUsers(await res.json());
+        if (res.ok) {
+          const data = await res.json();
+          setUsers(data.users || []);
+        }
       } else {
-        const res = await fetch(`${API_URL}/analytics/audit-logs?limit=100`, { headers });
+        const res = await fetch(`${API_URL}/auth/audit-logs?limit=100`, { headers });
         if (res.ok) {
           const data = await res.json();
           setLogs(data.logs);
@@ -40,7 +43,7 @@ export default function Admin() {
     e.preventDefault();
     const token = localStorage.getItem('ksp_token');
     try {
-      const res = await fetch(`${API_URL}/auth/register`, {
+      const res = await fetch(`${API_URL}/auth/create-user`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(newUser)
@@ -48,7 +51,7 @@ export default function Admin() {
       if (res.ok) {
         alert('User created successfully');
         setShowAddUser(false);
-        setNewUser({ username: '', password: '', email: '', full_name: '', role: 'officer', department: '', badge_number: '' });
+        setNewUser({ username: '', password: '', email: '', full_name: '', role: 'OFFICER', department: '', badge_number: '' });
         fetchData();
       } else {
         const data = await res.json();
@@ -117,7 +120,7 @@ export default function Admin() {
                   <tr key={u.id}>
                     <td><strong>{u.full_name}</strong></td>
                     <td>{u.username}</td>
-                    <td><span className={`badge badge-${u.role === 'super_admin' ? 'critical' : u.role === 'analyst' ? 'info' : 'success'}`}>{u.role.replace('_', ' ')}</span></td>
+                    <td><span className={`badge badge-${(u.role === 'super_admin' || u.role === 'ADMIN') ? 'critical' : (u.role === 'analyst' || u.role === 'ANALYST') ? 'info' : 'success'}`}>{u.role ? u.role.replace('_', ' ') : 'N/A'}</span></td>
                     <td>{u.department || '-'}</td>
                     <td>{u.badge_number || '-'}</td>
                     <td>
@@ -200,10 +203,9 @@ export default function Admin() {
                   <div className="form-group">
                     <label className="form-label">Role</label>
                     <select className="form-select" value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})}>
-                      <option value="officer">Police Officer</option>
-                      <option value="station_house_officer">Station House Officer</option>
-                      <option value="analyst">Crime Analyst</option>
-                      <option value="super_admin">Super Admin</option>
+                      <option value="OFFICER">Police Officer</option>
+                      <option value="ANALYST">Crime Analyst</option>
+                      <option value="ADMIN">System Administrator</option>
                     </select>
                   </div>
                   <div className="form-group">

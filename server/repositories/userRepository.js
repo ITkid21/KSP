@@ -1,6 +1,7 @@
 'use strict';
 
 const { executeQuery, insertRow, updateRow } = require('../services/catalystService');
+const { getCatalystDatetime } = require('../utils/dateUtils');
 
 const TABLE = 'system_users';
 
@@ -49,12 +50,12 @@ class UserRepository {
       password_hash: user.password_hash,
       full_name:     user.full_name,
       role:          user.role || 'OFFICER',
-      department:    user.department || '',
+      Department:    user.department || '',
       badge_number:  user.badge_number || '',
       is_active:     user.is_active !== undefined ? user.is_active : true,
-      created_at:    user.created_at || new Date().toISOString(),
-      updated_at:    user.updated_at || new Date().toISOString(),
-      last_login:    user.last_login || null,
+      created_at:    getCatalystDatetime(),
+      updated_at:    getCatalystDatetime(),
+      last_login:    null,
     };
     return await insertRow(req, TABLE, rowData);
   }
@@ -118,14 +119,15 @@ class UserRepository {
   async update(req, id, updates) {
     const UPDATABLE = [
       'username', 'email', 'password_hash', 'full_name', 'role',
-      'department', 'badge_number', 'is_active', 'last_login', 'updated_at',
+      'Department', 'badge_number', 'is_active', 'last_login', 'updated_at',
     ];
 
     const setClauses = [];
 
     UPDATABLE.forEach(field => {
-      if (updates[field] === undefined) return;
-      const val = updates[field];
+      if (field === 'Department' && updates.department === undefined) return;
+      if (field !== 'Department' && updates[field] === undefined) return;
+      const val = field === 'Department' ? updates.department : updates[field];
       if (val === null) {
         setClauses.push(`${field} = NULL`);
       } else if (typeof val === 'boolean') {
@@ -141,7 +143,7 @@ class UserRepository {
 
     // Always bump updated_at
     if (!updates.updated_at) {
-      setClauses.push(`updated_at = '${new Date().toISOString()}'`);
+      setClauses.push(`updated_at = '${getCatalystDatetime()}'`);
     }
 
     const query = `UPDATE ${TABLE} SET ${setClauses.join(', ')} WHERE id = '${esc(id)}'`;
@@ -152,7 +154,7 @@ class UserRepository {
    * Stamp the last_login timestamp for a user.
    */
   async updateLastLogin(req, id) {
-    const now = new Date().toISOString();
+    const now = getCatalystDatetime();
     return await this.update(req, id, { last_login: now, updated_at: now });
   }
 

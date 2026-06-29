@@ -24,10 +24,24 @@ function normalizeRole(role) {
  * Extract device metadata from the request.
  */
 function extractMeta(req) {
+  const userAgent = req.headers['user-agent'] || '';
+  let deviceInfo = req.headers['x-device-info'] || '';
+  
+  // Derive device_info if not provided
+  if (!deviceInfo && userAgent) {
+    if (/mobile/i.test(userAgent)) {
+      deviceInfo = 'Mobile';
+    } else if (/tablet/i.test(userAgent)) {
+      deviceInfo = 'Tablet';
+    } else {
+      deviceInfo = 'Desktop';
+    }
+  }
+
   return {
-    ip_address: req.ip || req.headers['x-forwarded-for'] || '::1',
-    user_agent: req.headers['user-agent'] || '',
-    device_info: req.headers['x-device-info'] || '',
+    ip_address: req.ip || req.headers['x-forwarded-for'] || '127.0.0.1',
+    user_agent: userAgent,
+    device_info: deviceInfo,
   };
 }
 
@@ -76,15 +90,22 @@ async function login(req, username, password) {
   // 5. Persist session
   const meta = extractMeta(req);
   const sessionId = uuidv4();
+  
+  // Prevent "Duplicate value for user_id" by clearing previous sessions for this user
+  try {
+    await sessionRepository.deleteByUser(req, user.id);
+  } catch (err) {
+    console.warn('[Session] Failed to delete existing sessions (might not exist):', err.message);
+  }
+
   await sessionRepository.create(req, {
     id: sessionId,
     user_id: user.id,
     token,
-    expires_at: expiry ? expiry.toISOString() : null,
+    expires_at: expiry, // Date object or undefined, will be handled by sessionRepository
     ip_address: meta.ip_address,
     user_agent: meta.user_agent,
     device_info: meta.device_info,
-    created_at: new Date().toISOString(),
   });
 
   // 6. Update last_login
@@ -137,7 +158,7 @@ async function changePassword(req, actorUser, targetUserId, oldPassword, newPass
     throw Object.assign(new Error('User not found.'), { status: 404 });
   }
 
-  const isAdmin = (actorUser.role || '').toUpperCase() === 'ADMIN';
+  const isAdmin = (actorUser.role || '').toUpperCase() === 'ADMIN' || (actorUser.role || '').toUpperCase() === 'SUPER_ADMIN';
   const isSelf = actorUser.id === targetUserId;
 
   if (!isAdmin && !isSelf) {
@@ -183,7 +204,8 @@ async function changePassword(req, actorUser, targetUserId, oldPassword, newPass
  * @returns {Object} created user (without password_hash)
  */
 async function createUser(req, actorUser, userData) {
-  if ((actorUser.role || '').toUpperCase() !== 'ADMIN') {
+  const roleUpper = (actorUser.role || '').toUpperCase();
+  if (roleUpper !== 'ADMIN' && roleUpper !== 'SUPER_ADMIN') {
     throw Object.assign(new Error('Only ADMIN can create users.'), { status: 403 });
   }
 
@@ -246,7 +268,8 @@ async function createUser(req, actorUser, userData) {
  * @param {Object} updates - allowed: full_name, role, department, badge_number, is_active
  */
 async function updateUser(req, actorUser, targetUserId, updates) {
-  if ((actorUser.role || '').toUpperCase() !== 'ADMIN') {
+  const roleUpper = (actorUser.role || '').toUpperCase();
+  if (roleUpper !== 'ADMIN' && roleUpper !== 'SUPER_ADMIN') {
     throw Object.assign(new Error('Only ADMIN can update users.'), { status: 403 });
   }
 
@@ -291,7 +314,8 @@ async function updateUser(req, actorUser, targetUserId, updates) {
  * @param {string} targetUserId
  */
 async function deactivateUser(req, actorUser, targetUserId) {
-  if ((actorUser.role || '').toUpperCase() !== 'ADMIN') {
+  const roleUpper = (actorUser.role || '').toUpperCase();
+  if (roleUpper !== 'ADMIN' && roleUpper !== 'SUPER_ADMIN') {
     throw Object.assign(new Error('Only ADMIN can deactivate users.'), { status: 403 });
   }
 

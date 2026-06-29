@@ -1,0 +1,20 @@
+$kind: http-request
+method: POST
+url: 'https://ksp-crime-intel-50042774083.development.catalystappsail.in/api/import/crimes'
+order: 1000
+headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'
+  - key: Content-Type
+    value: 'application/json'
+body:
+  type: json
+  content: |-
+    {
+      "crime_id":"C001",
+      "crime_type":"Theft",
+      "latitude":12.97,
+      "longitude":77.59,
+      "severity":3,
+      "district":"Central"
+    }

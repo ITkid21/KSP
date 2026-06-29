@@ -1,0 +1,5 @@
+name: JWT test
+values:
+  - key: jwt_token
+    value: ''
+color: 0

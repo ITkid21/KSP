@@ -1,0 +1,8 @@
+workspace:
+  id: a95c71ac-676a-4d15-9aae-3e579103cdea
+cloudResources:
+  collections:
+    ../postman/collections/KSP Crime Intelligence: 55955563-466356e7-5279-49bc-8c8f-4eec85396440
+  environments:
+    ../postman/environments/JWT test.environment.yaml: 55955563-be7df721-a7df-4c93-907b-25b155da1d07
+    ../postman/environments/New Environment.environment.yaml: 55955563-4462a95c-dea4-402c-9b81-d4fdfb718663

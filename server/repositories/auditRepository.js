@@ -2,6 +2,7 @@
 
 const { executeQuery, insertRow } = require('../services/catalystService');
 const { v4: uuidv4 } = require('uuid');
+const { getCatalystDatetime } = require('../utils/dateUtils');
 
 const TABLE = 'audit_logs';
 
@@ -39,7 +40,7 @@ class AuditRepository {
       resource_id: options.resource_id || '',
       details:     details || '',
       ip_address:  options.ip_address || (req ? (req.ip || '::1') : '::1'),
-      created_at:  options.created_at  || new Date().toISOString(),
+      created_at:  options.created_at  || getCatalystDatetime(),
     };
 
     try {

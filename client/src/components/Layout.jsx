@@ -22,7 +22,7 @@ const adminItems = { section: 'Administration', items: [
 
 export default function Layout({ user, onLogout }) {
   const location = useLocation();
-  const allSections = user.role === 'super_admin' ? [...navItems, adminItems] : navItems;
+  const allSections = (user.role === 'super_admin' || user.role === 'ADMIN') ? [...navItems, adminItems] : navItems;
 
   return (
     <div className="app-layout">

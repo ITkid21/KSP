@@ -60,7 +60,7 @@ function App() {
           <Route path="ai-analyst" element={<AIAnalyst />} />
           <Route path="reports" element={<Reports />} />
           <Route path="copilot" element={<InvestigationCopilot user={user} />} />
-          {user.role === 'super_admin' && <Route path="admin" element={<Admin />} />}
+          {(user.role === 'super_admin' || user.role === 'ADMIN') && <Route path="admin" element={<Admin />} />}
         </Route>
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />

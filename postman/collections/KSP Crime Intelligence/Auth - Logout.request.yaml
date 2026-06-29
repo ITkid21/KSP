@@ -1,0 +1,7 @@
+$kind: http-request
+method: POST
+url: 'http://localhost:5000/api/auth/logout'
+order: 110
+headers:
+  - key: Authorization
+    value: 'Bearer {{jwt_token}}'

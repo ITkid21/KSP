@@ -30,28 +30,28 @@ function requireRole(...allowedRoles) {
 }
 
 /** Only ADMIN can create, edit, delete users and view all audit logs */
-const canManageUsers = requireRole('ADMIN');
+const canManageUsers = requireRole('ADMIN', 'SUPER_ADMIN');
 
 /** Only ADMIN can view all audit logs */
-const canViewAuditLogs = requireRole('ADMIN');
+const canViewAuditLogs = requireRole('ADMIN', 'SUPER_ADMIN');
 
 /** ADMIN and ANALYST can access crime analytics */
-const canAccessAnalytics = requireRole('ADMIN', 'ANALYST');
+const canAccessAnalytics = requireRole('ADMIN', 'SUPER_ADMIN', 'ANALYST');
 
 /** ADMIN can access platform and system settings */
-const canManageSettings = requireRole('ADMIN');
+const canManageSettings = requireRole('ADMIN', 'SUPER_ADMIN');
 
 /** ADMIN, ANALYST, OFFICER can use Investigation Copilot / AI tools */
-const canAccessAITools = requireRole('ADMIN', 'ANALYST', 'OFFICER');
+const canAccessAITools = requireRole('ADMIN', 'SUPER_ADMIN', 'ANALYST', 'OFFICER');
 
 /** ADMIN and OFFICER can upload investigation documents */
-const canUploadDocuments = requireRole('ADMIN', 'OFFICER');
+const canUploadDocuments = requireRole('ADMIN', 'SUPER_ADMIN', 'OFFICER');
 
 /** ADMIN and ANALYST can run prediction models */
-const canRunPredictions = requireRole('ADMIN', 'ANALYST');
+const canRunPredictions = requireRole('ADMIN', 'SUPER_ADMIN', 'ANALYST');
 
 /** ADMIN and ANALYST can generate reports */
-const canGenerateReports = requireRole('ADMIN', 'ANALYST');
+const canGenerateReports = requireRole('ADMIN', 'SUPER_ADMIN', 'ANALYST');
 
 module.exports = {
   requireRole,

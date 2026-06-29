@@ -29,6 +29,7 @@ app.use(express.static(clientDistPath));
 // ─── API Routes ───────────────────────────────────────────────────────────
 
 app.use('/api/auth',        require('./routes/auth'));
+app.use('/api/import',      require('./routes/import'));
 app.use('/api/crime',       require('./routes/crime'));
 app.use('/api/map',         require('./routes/map'));
 app.use('/api/predictions', require('./routes/predictions'));

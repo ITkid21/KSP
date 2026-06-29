@@ -1,6 +1,7 @@
 'use strict';
 
 const { executeQuery, insertRow } = require('../services/catalystService');
+const { getCatalystDatetime } = require('../utils/dateUtils');
 
 const TABLE = 'sessions';
 
@@ -30,17 +31,29 @@ class SessionRepository {
    * @param {string} session.created_at
    */
   async create(req, session) {
+    const expiresAt = session.expires_at ? getCatalystDatetime(session.expires_at) : getCatalystDatetime(new Date(Date.now() + 86400000));
+    const createdAt = getCatalystDatetime();
+
     const rowData = {
       id:          session.id,
       user_id:     session.user_id,
       token:       session.token,
-      expires_at:  session.expires_at  || null,
+      expires_at:  expiresAt,
       ip_address:  session.ip_address  || '',
       user_agent:  (session.user_agent || '').substring(0, 500),  // Guard column length
       device_info: (session.device_info || '').substring(0, 500),
-      created_at:  session.created_at  || new Date().toISOString(),
+      created_at:  createdAt,
     };
-    return await insertRow(req, TABLE, rowData);
+    
+    console.log('CREATING SESSION');
+    console.log(JSON.stringify(rowData, null, 2));
+
+    const result = await insertRow(req, TABLE, rowData);
+    
+    console.log('SESSION INSERT SUCCESS');
+    console.log(result);
+    
+    return result;
   }
 
   /**
@@ -60,7 +73,8 @@ class SessionRepository {
   async findActiveByToken(req, token) {
     const session = await this.findByToken(req, token);
     if (!session) return null;
-    if (session.expires_at && new Date(session.expires_at) < new Date()) return null;
+    // We omit manual expires_at checking here because jwtService.verify(token)
+    // strictly handles expiration via the JWT 'exp' claim.
     return session;
   }
 

@@ -126,7 +126,7 @@ router.post('/create-user', authenticateToken, canManageUsers, asyncHandler(asyn
  */
 router.get('/users', authenticateToken, canManageUsers, asyncHandler(async (req, res) => {
   const users = await userRepo.getAll(req);
-  const safe = users.map(safeUser).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const safe = users.map(safeUser).filter(Boolean).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
   return res.status(200).json({ success: true, users: safe });
 }));
 
