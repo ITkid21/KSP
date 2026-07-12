@@ -1,8 +1,0 @@
-# ml-service/requirements.txt
-# Core ML Service dependencies will go here
-pandas
-numpy
-scikit-learn
-sqlalchemy
-flask
-xgboost

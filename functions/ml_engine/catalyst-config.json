@@ -1,0 +1,10 @@
+{
+  "deployment": {
+    "name": "ml_engine",
+    "stack": "python3.10",
+    "type": "basic"
+  },
+  "execution": {
+    "main": "main.py"
+  }
+}

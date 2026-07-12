@@ -1,0 +1,5 @@
+{
+  "stack": "python_3_10",
+  "build_path": ".",
+  "command": "python3 -u run.py"
+}

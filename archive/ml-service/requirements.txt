@@ -1,0 +1,9 @@
+# ml-service/requirements.txt
+# Pinned for Catalyst AppSail Python 3.10 runtime.
+# Versions chosen for compatibility and minimal disk footprint.
+Flask==3.0.3
+Flask-Cors==4.0.1
+pandas==2.2.3
+scikit-learn==1.5.2
+numpy==1.26.4
+scipy==1.13.1
