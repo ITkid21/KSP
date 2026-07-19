@@ -1,1 +1,360 @@
-[{"id":"0e529c25-216e-442d-8140-5fafeb6f75c2","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"EXPLAIN_HOTSPOT_PREDICTION","resource":"predictions","details":"Requested prediction explanation for MYSURU CITY (CYBER CRIME)","created_at":"2026-06-08T17:01:01.742Z"},{"id":"1c2a4ff6-3a03-4150-b69f-bde4cb6c238b","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"JUDGMENT_LEGAL_SEARCH","resource":"copilot","details":"Searched court judgments/legal acts with query: \"mudder\"","created_at":"2026-06-08T17:00:42.199Z"},{"id":"28bcf74e-24d3-4457-a67c-8740479dfa31","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-08T16:54:41.458Z"},{"id":"96326ae7-a563-42ec-ab7f-ff5be8c3d5f8","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-08T16:50:48.241Z"},{"id":"2c05aafc-4b35-41b2-a9de-ca219d5493a4","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"LOGIN","resource":"auth","details":"User logged in","ip_address":"::1","created_at":"2026-06-08T16:44:21.676Z"},{"id":"6574c8f1-76b7-4946-b2b8-62a7f76d8779","user_id":"3ce401dc-4100-46d4-8732-eb2c5eae7401","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-08T16:18:09.859Z"},{"id":"d332d260-9175-494f-b9ed-f995dbead19a","user_id":"3ce401dc-4100-46d4-8732-eb2c5eae7401","action":"COPILOT_CHAT_QUERY","resource":"copilot","resource_id":"KSP-CYBER-2026-001","details":"Queried copilot: \"hi\"","created_at":"2026-06-08T16:17:54.801Z"},{"id":"3b4ef528-71a4-42dc-a5a8-6d3a6d64a061","user_id":"3ce401dc-4100-46d4-8732-eb2c5eae7401","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-08T16:17:41.743Z"},{"id":"3fcd3632-97be-4ece-9765-d0307b05b9bd","user_id":"3ce401dc-4100-46d4-8732-eb2c5eae7401","action":"LOGIN","resource":"auth","details":"User logged in","ip_address":"::1","created_at":"2026-06-08T16:17:38.653Z"},{"id":"4302f57e-ee4f-4ed2-81ea-ea94b4312b41","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-08T16:13:59.998Z"},{"id":"f3e084e2-8e3d-492e-93aa-eed955cf1503","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"LOGIN","resource":"auth","details":"User logged in","ip_address":"::1","created_at":"2026-06-08T16:13:34.409Z"},{"id":"c4a369d6-7b9f-4c6c-a389-64b675d68427","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-05T09:54:47.230Z"},{"id":"2735feae-26cf-4b23-a653-ca8878170827","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-05T09:54:42.812Z"},{"id":"4cf4941c-c3ae-4fb3-b4f5-9e46b113f214","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-05T09:54:36.889Z"},{"id":"a14a2272-fea1-4794-8658-02b57b2215c2","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-05T09:53:03.136Z"},{"id":"5e0f30a6-6983-4930-afdb-e5d21c8c0fe6","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"LOGIN","resource":"auth","details":"User logged in","ip_address":"::1","created_at":"2026-06-05T09:52:49.259Z"},{"id":"524876f8-4387-48e3-8f53-97455f09d4ae","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-04T07:47:20.091Z"},{"id":"df15ee26-d088-44fe-837e-c3dde8a9d2fa","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"COPILOT_CHAT_QUERY","resource":"copilot","resource_id":"KSP-CYBER-2026-001","details":"Queried copilot: \"help\"","created_at":"2026-06-04T07:46:46.617Z"},{"id":"04051e6e-9d74-4513-8836-912ad99efb09","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"EXPLAIN_HOTSPOT_PREDICTION","resource":"predictions","details":"Requested prediction explanation for SHIVAMOGGA (ROBBERY)","created_at":"2026-06-04T07:46:34.670Z"},{"id":"dd999492-61a5-4c07-9708-0bdc0c2ccf70","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"EXPLAIN_HOTSPOT_PREDICTION","resource":"predictions","details":"Requested prediction explanation for MYSURU CITY (ROBBERY)","created_at":"2026-06-04T07:46:28.644Z"},{"id":"2337f1e8-b9f0-46c5-a74b-0bc182afdfd4","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"EXPLAIN_HOTSPOT_PREDICTION","resource":"predictions","details":"Requested prediction explanation for BENGALURU CITY (ROBBERY)","created_at":"2026-06-04T07:46:20.737Z"},{"id":"eae9f151-d6a0-431e-bb3f-45f25c2ddff7","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"EXPLAIN_HOTSPOT_PREDICTION","resource":"predictions","details":"Requested prediction explanation for BENGALURU CITY (CYBER CRIME)","created_at":"2026-06-04T07:46:02.797Z"},{"id":"a79c8dc7-2f16-40b6-b1a5-89fe4d22a05c","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"COPILOT_CHAT_QUERY","resource":"copilot","resource_id":"KSP-CYBER-2026-001","details":"Queried copilot: \"Summarize this case\"","created_at":"2026-06-04T07:44:57.778Z"},{"id":"59318f93-d78b-4fdc-b085-d5ed922e27e5","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-04T07:44:51.643Z"},{"id":"1c5a0b15-3081-4450-80ec-2f4d60e156b4","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"LOGIN","resource":"auth","details":"User logged in","ip_address":"::1","created_at":"2026-06-03T10:28:13.025Z"},{"id":"c46adf77-ee4a-4348-bcc3-691e5c3bf8dd","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"LOGIN","resource":"auth","details":"User logged in","ip_address":"::1","created_at":"2026-06-03T10:25:08.178Z"},{"id":"5d2b6d58-edaa-4cf1-b3e9-b2f56e679eac","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-09T04:42:56.801Z"},{"id":"76067240-c975-4963-bbb7-b3799d8a9a23","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"COPILOT_CHAT_QUERY","resource":"copilot","resource_id":"KSP-CYBER-2026-001","details":"Queried copilot: \"create summery\"","created_at":"2026-06-09T04:43:10.807Z"},{"id":"f7eb0316-6948-4bdf-938a-1ce59a033bcd","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-09T04:43:17.861Z"},{"id":"9403b4cc-ad34-45a2-a02d-2125494d76f4","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-09T04:43:21.226Z"},{"id":"30fcfd26-376a-4b89-8e51-0183ab71df47","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-09T07:07:51.317Z"},{"id":"53d5902e-255c-4e51-aa62-076056a5eeb8","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-09T07:08:03.428Z"},{"id":"dd634cc3-7c86-48e8-b4bf-70e23810b960","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-09T07:08:37.506Z"},{"id":"52510afb-2f12-4fbb-8a88-1e0766f7bd12","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-09T07:08:45.599Z"},{"id":"5dabab92-1bd3-495b-b2bb-761b9bcc43b2","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-09T07:09:15.234Z"},{"id":"c3dc5309-ef01-4ea8-8a68-2342b2365d4e","user_id":"573e1677-634d-44ca-abaa-1a8226fb1f48","action":"VIEW_CASE_WORKSPACE","resource":"cases","resource_id":"KSP-CYBER-2026-001","details":"Accessed Case Workspace details","created_at":"2026-06-09T07:09:18.445Z"}]
+[
+  {
+    "id": "0e529c25-216e-442d-8140-5fafeb6f75c2",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "EXPLAIN_HOTSPOT_PREDICTION",
+    "resource": "predictions",
+    "details": "Requested prediction explanation for MYSURU CITY (CYBER CRIME)",
+    "created_at": "2026-06-08T17:01:01.742Z"
+  },
+  {
+    "id": "1c2a4ff6-3a03-4150-b69f-bde4cb6c238b",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "JUDGMENT_LEGAL_SEARCH",
+    "resource": "copilot",
+    "details": "Searched court judgments/legal acts with query: \"mudder\"",
+    "created_at": "2026-06-08T17:00:42.199Z"
+  },
+  {
+    "id": "28bcf74e-24d3-4457-a67c-8740479dfa31",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-08T16:54:41.458Z"
+  },
+  {
+    "id": "96326ae7-a563-42ec-ab7f-ff5be8c3d5f8",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-08T16:50:48.241Z"
+  },
+  {
+    "id": "2c05aafc-4b35-41b2-a9de-ca219d5493a4",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "LOGIN",
+    "resource": "auth",
+    "details": "User logged in",
+    "ip_address": "::1",
+    "created_at": "2026-06-08T16:44:21.676Z"
+  },
+  {
+    "id": "6574c8f1-76b7-4946-b2b8-62a7f76d8779",
+    "user_id": "3ce401dc-4100-46d4-8732-eb2c5eae7401",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-08T16:18:09.859Z"
+  },
+  {
+    "id": "d332d260-9175-494f-b9ed-f995dbead19a",
+    "user_id": "3ce401dc-4100-46d4-8732-eb2c5eae7401",
+    "action": "COPILOT_CHAT_QUERY",
+    "resource": "copilot",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Queried copilot: \"hi\"",
+    "created_at": "2026-06-08T16:17:54.801Z"
+  },
+  {
+    "id": "3b4ef528-71a4-42dc-a5a8-6d3a6d64a061",
+    "user_id": "3ce401dc-4100-46d4-8732-eb2c5eae7401",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-08T16:17:41.743Z"
+  },
+  {
+    "id": "3fcd3632-97be-4ece-9765-d0307b05b9bd",
+    "user_id": "3ce401dc-4100-46d4-8732-eb2c5eae7401",
+    "action": "LOGIN",
+    "resource": "auth",
+    "details": "User logged in",
+    "ip_address": "::1",
+    "created_at": "2026-06-08T16:17:38.653Z"
+  },
+  {
+    "id": "4302f57e-ee4f-4ed2-81ea-ea94b4312b41",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-08T16:13:59.998Z"
+  },
+  {
+    "id": "f3e084e2-8e3d-492e-93aa-eed955cf1503",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "LOGIN",
+    "resource": "auth",
+    "details": "User logged in",
+    "ip_address": "::1",
+    "created_at": "2026-06-08T16:13:34.409Z"
+  },
+  {
+    "id": "c4a369d6-7b9f-4c6c-a389-64b675d68427",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-05T09:54:47.230Z"
+  },
+  {
+    "id": "2735feae-26cf-4b23-a653-ca8878170827",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-05T09:54:42.812Z"
+  },
+  {
+    "id": "4cf4941c-c3ae-4fb3-b4f5-9e46b113f214",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-05T09:54:36.889Z"
+  },
+  {
+    "id": "a14a2272-fea1-4794-8658-02b57b2215c2",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-05T09:53:03.136Z"
+  },
+  {
+    "id": "5e0f30a6-6983-4930-afdb-e5d21c8c0fe6",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "LOGIN",
+    "resource": "auth",
+    "details": "User logged in",
+    "ip_address": "::1",
+    "created_at": "2026-06-05T09:52:49.259Z"
+  },
+  {
+    "id": "524876f8-4387-48e3-8f53-97455f09d4ae",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-04T07:47:20.091Z"
+  },
+  {
+    "id": "df15ee26-d088-44fe-837e-c3dde8a9d2fa",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "COPILOT_CHAT_QUERY",
+    "resource": "copilot",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Queried copilot: \"help\"",
+    "created_at": "2026-06-04T07:46:46.617Z"
+  },
+  {
+    "id": "04051e6e-9d74-4513-8836-912ad99efb09",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "EXPLAIN_HOTSPOT_PREDICTION",
+    "resource": "predictions",
+    "details": "Requested prediction explanation for SHIVAMOGGA (ROBBERY)",
+    "created_at": "2026-06-04T07:46:34.670Z"
+  },
+  {
+    "id": "dd999492-61a5-4c07-9708-0bdc0c2ccf70",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "EXPLAIN_HOTSPOT_PREDICTION",
+    "resource": "predictions",
+    "details": "Requested prediction explanation for MYSURU CITY (ROBBERY)",
+    "created_at": "2026-06-04T07:46:28.644Z"
+  },
+  {
+    "id": "2337f1e8-b9f0-46c5-a74b-0bc182afdfd4",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "EXPLAIN_HOTSPOT_PREDICTION",
+    "resource": "predictions",
+    "details": "Requested prediction explanation for BENGALURU CITY (ROBBERY)",
+    "created_at": "2026-06-04T07:46:20.737Z"
+  },
+  {
+    "id": "eae9f151-d6a0-431e-bb3f-45f25c2ddff7",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "EXPLAIN_HOTSPOT_PREDICTION",
+    "resource": "predictions",
+    "details": "Requested prediction explanation for BENGALURU CITY (CYBER CRIME)",
+    "created_at": "2026-06-04T07:46:02.797Z"
+  },
+  {
+    "id": "a79c8dc7-2f16-40b6-b1a5-89fe4d22a05c",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "COPILOT_CHAT_QUERY",
+    "resource": "copilot",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Queried copilot: \"Summarize this case\"",
+    "created_at": "2026-06-04T07:44:57.778Z"
+  },
+  {
+    "id": "59318f93-d78b-4fdc-b085-d5ed922e27e5",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-04T07:44:51.643Z"
+  },
+  {
+    "id": "1c5a0b15-3081-4450-80ec-2f4d60e156b4",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "LOGIN",
+    "resource": "auth",
+    "details": "User logged in",
+    "ip_address": "::1",
+    "created_at": "2026-06-03T10:28:13.025Z"
+  },
+  {
+    "id": "c46adf77-ee4a-4348-bcc3-691e5c3bf8dd",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "LOGIN",
+    "resource": "auth",
+    "details": "User logged in",
+    "ip_address": "::1",
+    "created_at": "2026-06-03T10:25:08.178Z"
+  },
+  {
+    "id": "5d2b6d58-edaa-4cf1-b3e9-b2f56e679eac",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-09T04:42:56.801Z"
+  },
+  {
+    "id": "76067240-c975-4963-bbb7-b3799d8a9a23",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "COPILOT_CHAT_QUERY",
+    "resource": "copilot",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Queried copilot: \"create summery\"",
+    "created_at": "2026-06-09T04:43:10.807Z"
+  },
+  {
+    "id": "f7eb0316-6948-4bdf-938a-1ce59a033bcd",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-09T04:43:17.861Z"
+  },
+  {
+    "id": "9403b4cc-ad34-45a2-a02d-2125494d76f4",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-09T04:43:21.226Z"
+  },
+  {
+    "id": "30fcfd26-376a-4b89-8e51-0183ab71df47",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-09T07:07:51.317Z"
+  },
+  {
+    "id": "53d5902e-255c-4e51-aa62-076056a5eeb8",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-09T07:08:03.428Z"
+  },
+  {
+    "id": "dd634cc3-7c86-48e8-b4bf-70e23810b960",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-09T07:08:37.506Z"
+  },
+  {
+    "id": "52510afb-2f12-4fbb-8a88-1e0766f7bd12",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-09T07:08:45.599Z"
+  },
+  {
+    "id": "5dabab92-1bd3-495b-b2bb-761b9bcc43b2",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-09T07:09:15.234Z"
+  },
+  {
+    "id": "c3dc5309-ef01-4ea8-8a68-2342b2365d4e",
+    "user_id": "573e1677-634d-44ca-abaa-1a8226fb1f48",
+    "action": "VIEW_CASE_WORKSPACE",
+    "resource": "cases",
+    "resource_id": "KSP-CYBER-2026-001",
+    "details": "Accessed Case Workspace details",
+    "created_at": "2026-06-09T07:09:18.445Z"
+  },
+  {
+    "id": "4b6773b4-8577-41e9-8040-fdd9821f18c3",
+    "user_id": "9d0742fd-21b9-4f7a-8215-9306dfcb5737",
+    "action": "LOGIN",
+    "resource": "auth",
+    "resource_id": "",
+    "details": "User logged in successfully",
+    "ip_address": "::ffff:127.0.0.1",
+    "created_at": "2026-07-05 16:29:35"
+  },
+  {
+    "id": "9392dc84-36b5-48c9-9b56-009cf5e386d7",
+    "user_id": "9d0742fd-21b9-4f7a-8215-9306dfcb5737",
+    "action": "LOGIN",
+    "resource": "auth",
+    "resource_id": "",
+    "details": "User logged in successfully",
+    "ip_address": "::1",
+    "created_at": "2026-07-05 18:45:52"
+  },
+  {
+    "id": "00ba853e-52e3-43ac-87f2-b725c232e873",
+    "user_id": "9d0742fd-21b9-4f7a-8215-9306dfcb5737",
+    "action": "LOGIN",
+    "resource": "auth",
+    "resource_id": "",
+    "details": "User logged in successfully",
+    "ip_address": "::1",
+    "created_at": "2026-07-05 18:46:18"
+  },
+  {
+    "id": "5c89bc8d-a6db-4224-a525-bb2f66d97d34",
+    "user_id": "9d0742fd-21b9-4f7a-8215-9306dfcb5737",
+    "action": "LOGIN",
+    "resource": "auth",
+    "resource_id": "",
+    "details": "User logged in successfully",
+    "ip_address": "::1",
+    "created_at": "2026-07-05 18:47:59"
+  }
+]

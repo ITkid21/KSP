@@ -18,19 +18,32 @@ class JsonDB {
       'ai_insights', 'ml_outputs', 'sessions',
       'cases', 'documents', 'document_chunks', 'copilot_chats', 'copilot_caches'
     ];
-    this.tables.forEach(t => this._load(t));
+    this.tables.forEach(t => this._ensureTable(t));
   }
 
-  _filePath(table) { return path.join(DB_DIR, `${table}.json`); }
+  _filePath(table) {
+    return path.join(DB_DIR, `${table}.json`);
+  }
 
-  _load(table) {
-    const fp = this._filePath(table);
-    if (fs.existsSync(fp)) {
-      try { this.cache[table] = JSON.parse(fs.readFileSync(fp, 'utf-8')); }
-      catch { this.cache[table] = []; }
-    } else {
-      this.cache[table] = [];
+  _ensureTable(table) {
+    if (!table || typeof table !== 'string') {
+      throw new Error('[JsonDB] Table name must be a non-empty string.');
     }
+
+    if (this.cache[table] === undefined) {
+      const fp = this._filePath(table);
+      if (fs.existsSync(fp)) {
+        try {
+          this.cache[table] = JSON.parse(fs.readFileSync(fp, 'utf-8'));
+        } catch {
+          this.cache[table] = [];
+        }
+      } else {
+        this.cache[table] = [];
+      }
+    }
+
+    return this.cache[table];
   }
 
   _save(table) {
@@ -41,31 +54,38 @@ class JsonDB {
     }
   }
 
-  getAll(table) { return this.cache[table] || []; }
+  getAll(table) {
+    return [...this._ensureTable(table)];
+  }
 
-  find(table, predicate) { return (this.cache[table] || []).filter(predicate); }
+  find(table, predicate) {
+    return this._ensureTable(table).filter(predicate);
+  }
 
-  findOne(table, predicate) { return (this.cache[table] || []).find(predicate); }
+  findOne(table, predicate) {
+    return this._ensureTable(table).find(predicate);
+  }
 
   insert(table, record) {
-    if (!this.cache[table]) this.cache[table] = [];
-    this.cache[table].push(record);
+    const rows = this._ensureTable(table);
+    rows.push(record);
     this._save(table);
     return record;
   }
 
   insertMany(table, records) {
-    if (!this.cache[table]) this.cache[table] = [];
-    this.cache[table].push(...records);
+    const rows = this._ensureTable(table);
+    rows.push(...records);
     this._save(table);
     return records;
   }
 
   update(table, predicate, updates) {
     let updated = 0;
-    (this.cache[table] || []).forEach((item, idx) => {
+    const rows = this._ensureTable(table);
+    rows.forEach((item, idx) => {
       if (predicate(item)) {
-        this.cache[table][idx] = { ...item, ...updates };
+        rows[idx] = { ...item, ...updates };
         updated++;
       }
     });
@@ -74,8 +94,9 @@ class JsonDB {
   }
 
   remove(table, predicate) {
-    const before = (this.cache[table] || []).length;
-    this.cache[table] = (this.cache[table] || []).filter(item => !predicate(item));
+    const rows = this._ensureTable(table);
+    const before = rows.length;
+    this.cache[table] = rows.filter(item => !predicate(item));
     const removed = before - this.cache[table].length;
     if (removed > 0) this._save(table);
     return removed;
@@ -87,13 +108,13 @@ class JsonDB {
   }
 
   count(table, predicate) {
-    if (!predicate) return (this.cache[table] || []).length;
-    return (this.cache[table] || []).filter(predicate).length;
+    if (!predicate) return this._ensureTable(table).length;
+    return this._ensureTable(table).filter(predicate).length;
   }
 
   aggregate(table, groupKey, sumKey) {
     const result = {};
-    (this.cache[table] || []).forEach(item => {
+    this._ensureTable(table).forEach(item => {
       const key = typeof groupKey === 'function' ? groupKey(item) : item[groupKey];
       if (!result[key]) result[key] = 0;
       result[key] += (typeof sumKey === 'function' ? sumKey(item) : (item[sumKey] || 0));
@@ -103,7 +124,7 @@ class JsonDB {
 
   groupBy(table, keyFn) {
     const result = {};
-    (this.cache[table] || []).forEach(item => {
+    this._ensureTable(table).forEach(item => {
       const key = keyFn(item);
       if (!result[key]) result[key] = [];
       result[key].push(item);

@@ -1,6 +1,21 @@
 'use strict';
 
+/**
+ * KSP Crime Intelligence Platform — Import Routes
+ * ─────────────────────────────────────────────────
+ * Provides a 3-step, Catalyst File Store-based CSV import pipeline:
+ *
+ *   POST /api/import/upload    — Upload CSV → Catalyst File Store, returns file_id
+ *   POST /api/import/validate  — Download file, parse, validate, detect duplicates
+ *   POST /api/import/start     — Download file, bulk-insert into crime_raw
+ *
+ * Also preserves:
+ *   POST /api/import/crimes    — Single JSON record insert (unchanged)
+ *   GET  /api/import/health    — Health check (unchanged)
+ */
+
 const express = require('express');
+const multer  = require('multer');
 const router  = express.Router();
 
 const { authenticateToken }    = require('../middleware/auth');
@@ -8,23 +23,40 @@ const { requireRole }          = require('../middleware/roleMiddleware');
 const { validateCrimeRecord }  = require('../services/validationService');
 const crimeRepository          = require('../repositories/crimeRepository');
 const pipelineService          = require('../services/pipelineService');
+const filestoreService         = require('../services/filestoreService');
+const DbscanRunner             = require('../services/dbscanRunner');
+const fs                       = require('fs');
+const path                     = require('path');
 
 /**
- * Wrap async route handlers so unhandled promise rejections are passed to next().
+ * Wrap async route handlers so unhandled promise rejections are forwarded to next().
  */
 const asyncHandler = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-// ─── CSV Parsing Helpers ─────────────────────────────────────────────────────
-//
-// Pure Node.js — zero external packages.
-// Uses the same char-by-char quoted-field approach as server/utils/seedDatabase.js.
+// ─── Multer — memory storage, CSV files only, 50 MB cap ──────────────────────
+const csvUpload = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ok = file.originalname.toLowerCase().endsWith('.csv') ||
+               /text\/(csv|plain)/i.test(file.mimetype) ||
+               /csv/i.test(file.mimetype);
+    cb(ok ? null : new Error('Only .csv files are accepted.'), ok);
+  },
+});
+
+// ─── Karnataka geographic bounding box (for coordinate warnings) ─────────────
+// Approximately covers the state of Karnataka, India.
+const KA_BOUNDS = { minLat: 11.5, maxLat: 18.5, minLng: 74.0, maxLng: 78.6 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CSV Parsing Helpers
+// (Pure Node.js — zero external packages)
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Parse a single CSV line into an array of trimmed string values.
  * Correctly handles double-quoted fields that contain commas or newlines.
- *
- * @param {string} line
- * @returns {string[]}
  */
 function parseCSVLine(line) {
   const parts = [];
@@ -46,18 +78,6 @@ function parseCSVLine(line) {
   return parts;
 }
 
-/**
- * Parse a full CSV string into an array of plain objects keyed by header names.
- *
- * Rules:
- *   - UTF-8 BOM is stripped automatically.
- *   - First non-empty line is the header row (lowercased + trimmed).
- *   - Blank lines are skipped.
- *   - Values are raw strings — type coercion happens in mapRowToRecord().
- *
- * @param {string} csvText
- * @returns {{ headers: string[], rows: Object[] }}
- */
 function normalizeHeader(name) {
   return String(name || '')
     .toLowerCase()
@@ -66,6 +86,10 @@ function normalizeHeader(name) {
     .replace(/\-+/g, '_');
 }
 
+/**
+ * Parse a full CSV string into { headers, rows }.
+ * Strips UTF-8 BOM, uses first non-empty line as headers, skips blank lines.
+ */
 function parseCSV(csvText) {
   const text     = (csvText || '').replace(/^\uFEFF/, ''); // strip BOM
   const lines    = text.split('\n');
@@ -88,32 +112,14 @@ function parseCSV(csvText) {
   return { headers, rows };
 }
 
-/**
- * Map a raw CSV row (all string values) to a typed crime record object.
- *
- * Type coercions match the verified Catalyst crime_raw schema:
- *   latitude   → double  (parseFloat — sent as Number to Catalyst)
- *   longitude  → double  (parseFloat — sent as Number to Catalyst)
- *   severity   → int     (parseInt   — sent as Number to Catalyst)
- *   All others → string
- *
- * incident_date defaults to today (YYYY-MM-DD) if the CSV column is absent or empty.
- *
- * @param {Object} rawRow - Raw CSV row object (all values are strings)
- * @returns {Object} Typed crime record ready for validateCrimeRecord() and insertMany()
- */
+// ─── Severity normaliser ──────────────────────────────────────────────────────
+
 function normalizeSeverity(value) {
   if (value === undefined || value === null) return 1;
   const normalized = String(value).trim();
   if (normalized === '') return 1;
 
-  const severityMap = {
-    low:      1,
-    medium:   2,
-    high:     3,
-    critical: 4,
-  };
-
+  const severityMap = { low: 1, medium: 2, high: 3, critical: 4 };
   const mapped = severityMap[normalized.toLowerCase()];
   if (mapped !== undefined) return mapped;
 
@@ -121,84 +127,7 @@ function normalizeSeverity(value) {
   return Number.isNaN(numeric) ? 1 : numeric;
 }
 
-function normalizeDateValue(value) {
-  console.log('[CSV] Raw date:', value);
-
-  if (value instanceof Date) {
-    if (isNaN(value.getTime())) {
-      console.log('[CSV] Parsed date:', '');
-      return '';
-    }
-    const formattedDate = formatDateToYYYYMMDD(value);
-    console.log('[CSV] Parsed date:', formattedDate);
-    return formattedDate;
-  }
-
-  const raw = String(value || '').trim();
-  if (!raw) {
-    console.log('[CSV] Parsed date:', '');
-    return '';
-  }
-
-  const numericValue = Number(raw);
-  const isExcelSerial = /^[0-9]+(?:\.[0-9]+)?$/.test(raw) && numericValue > 0 && numericValue < 100000;
-  if (isExcelSerial) {
-    const excelDate = excelSerialToDate(numericValue);
-    if (excelDate) {
-      const formattedDate = formatDateToYYYYMMDD(excelDate);
-      console.log('[CSV] Parsed date:', formattedDate);
-      return formattedDate;
-    }
-  }
-
-  const normalized = raw.replace(/\//g, '-').trim();
-  const isoMatch = /^\d{4}-\d{1,2}-\d{1,2}$/.test(normalized);
-  if (isoMatch) {
-    const parsed = new Date(normalized);
-    if (!isNaN(parsed.getTime())) {
-      const formattedDate = formatDateToYYYYMMDD(parsed);
-      console.log('[CSV] Parsed date:', formattedDate);
-      return formattedDate;
-    }
-  }
-
-  const parts = normalized.split('-');
-  if (parts.length === 3) {
-    const [p1, p2, p3] = parts;
-    const n1 = Number(p1);
-    const n2 = Number(p2);
-    const n3 = Number(p3);
-
-    if (!Number.isNaN(n1) && !Number.isNaN(n2) && !Number.isNaN(n3)) {
-      let parsed;
-      if (/^\d{4}$/.test(p1)) {
-        parsed = new Date(normalized);
-      } else if (/^\d{4}$/.test(p3)) {
-        if (p1.length > 2 || Number(p1) > 12) {
-          parsed = new Date(n3, n2 - 1, n1);
-        } else {
-          parsed = new Date(n3, n1 - 1, n2);
-        }
-      }
-
-      if (parsed && !isNaN(parsed.getTime())) {
-        const formattedDate = formatDateToYYYYMMDD(parsed);
-        console.log('[CSV] Parsed date:', formattedDate);
-        return formattedDate;
-      }
-    }
-  }
-
-  const parsed = new Date(raw);
-  if (!isNaN(parsed.getTime())) {
-    const formattedDate = formatDateToYYYYMMDD(parsed);
-    console.log('[CSV] Parsed date:', formattedDate);
-    return formattedDate;
-  }
-
-  console.log('[CSV] Parsed date:', '');
-  return '';
-}
+// ─── Date normaliser ──────────────────────────────────────────────────────────
 
 function formatDateToYYYYMMDD(date) {
   const d = date instanceof Date ? date : new Date(date);
@@ -211,37 +140,91 @@ function excelSerialToDate(serial) {
   const days = Number(serial);
   if (Number.isNaN(days) || days <= 0) return null;
 
-  const wholeDays = Math.floor(days);
+  const wholeDays    = Math.floor(days);
   const timeFraction = days - wholeDays;
-
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const excelEpoch = Date.UTC(1899, 11, 31);
+  const msPerDay     = 24 * 60 * 60 * 1000;
+  const excelEpoch   = Date.UTC(1899, 11, 31);
 
   let dateMs = excelEpoch + wholeDays * msPerDay;
-  if (wholeDays >= 60) {
-    dateMs -= msPerDay; // Excel 1900 leap year bug correction
-  }
+  if (wholeDays >= 60) dateMs -= msPerDay; // Excel 1900 leap-year bug correction
 
   dateMs += Math.round(timeFraction * msPerDay);
   const date = new Date(dateMs);
   return isNaN(date.getTime()) ? null : date;
 }
 
+function normalizeDateValue(value) {
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? '' : formatDateToYYYYMMDD(value);
+  }
+
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  const numericValue = Number(raw);
+  const isExcelSerial = /^[0-9]+(?:\.[0-9]+)?$/.test(raw) &&
+                        numericValue > 0 && numericValue < 100000;
+  if (isExcelSerial) {
+    const excelDate = excelSerialToDate(numericValue);
+    if (excelDate) return formatDateToYYYYMMDD(excelDate);
+  }
+
+  const normalized = raw.replace(/\//g, '-').trim();
+  const isoMatch   = /^\d{4}-\d{1,2}-\d{1,2}$/.test(normalized);
+  if (isoMatch) {
+    const parsed = new Date(normalized);
+    if (!isNaN(parsed.getTime())) return formatDateToYYYYMMDD(parsed);
+  }
+
+  const parts = normalized.split('-');
+  if (parts.length === 3) {
+    const [p1, p2, p3] = parts;
+    const n1 = Number(p1), n2 = Number(p2), n3 = Number(p3);
+    if (!Number.isNaN(n1) && !Number.isNaN(n2) && !Number.isNaN(n3)) {
+      let parsed;
+      if (/^\d{4}$/.test(p1)) {
+        parsed = new Date(normalized);
+      } else if (/^\d{4}$/.test(p3)) {
+        parsed = (p1.length > 2 || Number(p1) > 12)
+          ? new Date(n3, n2 - 1, n1)
+          : new Date(n3, n1 - 1, n2);
+      }
+      if (parsed && !isNaN(parsed.getTime())) return formatDateToYYYYMMDD(parsed);
+    }
+  }
+
+  const parsed = new Date(raw);
+  return isNaN(parsed.getTime()) ? '' : formatDateToYYYYMMDD(parsed);
+}
+
+// ─── Row mapper ───────────────────────────────────────────────────────────────
+
+/**
+ * Map a raw CSV row (all string values) to a typed crime record.
+ * Preserves original business logic from previous import.js.
+ */
 function mapRowToRecord(rawRow) {
   const incidentDateValue = normalizeDateValue(rawRow.incident_date || rawRow.date);
 
   return {
-    crime_id:      (rawRow.crime_id      || '').trim(),
-    crime_type:    (rawRow.crime_type    || '').trim(),
-    latitude:      rawRow.latitude  !== '' ? parseFloat(rawRow.latitude)   : NaN,
-    longitude:     rawRow.longitude !== '' ? parseFloat(rawRow.longitude)  : NaN,
-    district:      (rawRow.district      || '').trim(),
+    crime_id:      (rawRow.crime_id   || '').trim(),
+    crime_type:    (rawRow.crime_type || '').trim(),
+    latitude:      rawRow.latitude  !== '' ? parseFloat(rawRow.latitude)  : NaN,
+    longitude:     rawRow.longitude !== '' ? parseFloat(rawRow.longitude) : NaN,
+    district:      (rawRow.district  || '').trim(),
     severity:      normalizeSeverity(rawRow.severity),
     incident_date: incidentDateValue || new Date().toISOString().slice(0, 10),
     status:        (rawRow.status || 'raw').trim(),
   };
 }
 
+// ─── Row validator (lenient — any non-empty crime_type accepted) ──────────────
+
+/**
+ * Validates a mapped CSV row against business rules.
+ * Uses lenient crime_type validation (any non-empty string) to support
+ * real-world KSP crime categories that exceed the whitelist in validationService.js.
+ */
 function validateCsvRecord(record) {
   const errors = [];
 
@@ -259,12 +242,12 @@ function validateCsvRecord(record) {
 
   const lat = Number(record.latitude);
   if (isNaN(lat) || lat < -90 || lat > 90) {
-    errors.push('Invalid latitude. It must be a number between -90 and 90.');
+    errors.push('Invalid latitude. Must be a number between -90 and 90.');
   }
 
   const lng = Number(record.longitude);
   if (isNaN(lng) || lng < -180 || lng > 180) {
-    errors.push('Invalid longitude. It must be a number between -180 and 180.');
+    errors.push('Invalid longitude. Must be a number between -180 and 180.');
   }
 
   if (!record.district || typeof record.district !== 'string' || record.district.trim() === '') {
@@ -274,11 +257,15 @@ function validateCsvRecord(record) {
   return { valid: errors.length === 0, errors };
 }
 
-// Required CSV column headers (matched after normalizing the header row)
+// Required CSV column headers (matched after header normalisation)
 const REQUIRED_HEADERS = ['crime_id', 'crime_type', 'latitude', 'longitude', 'district'];
 
+// Maximum number of rows for which duplicate DB lookups are performed in /validate
+const DUPE_CHECK_LIMIT = 500;
+
+
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /api/import/crimes
+// POST /api/import/crimes  (UNCHANGED — single JSON record insert)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -378,186 +365,428 @@ router.post('/crimes', authenticateToken, requireRole('ADMIN'), asyncHandler(asy
 
 }));
 
+
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /api/import/csv
+// POST /api/import/upload
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * @route   POST /api/import/csv
+ * @route   POST /api/import/upload
  * @access  ADMIN only
- * @desc    Receive a raw CSV file, validate every row, bulk-insert valid rows
- *          into crime_raw, write import_history, and log every stage to
- *          Pipeline_Logs. Returns a detailed per-batch summary.
+ * @desc    Accept a CSV file via multipart/form-data (field: "csv"),
+ *          upload it to Catalyst File Store, and return { file_id, folder_id }.
  *
- * Request:
- *   Content-Type: text/csv
- *   Body: raw CSV text
+ * Prerequisites:
+ *   - CATALYST_CSV_FOLDER_ID must be set in server/.env
+ *   - The folder must already exist in the Catalyst Console → File Store
  *
- *   Optional header:
- *     X-Filename: your_file.csv   (stored in import_history.filename)
+ * Request: multipart/form-data, field name "csv", file size ≤ 50 MB
  *
- *   Required CSV columns (case-insensitive):
- *     crime_id, crime_type, latitude, longitude, district
+ * Success (200):
+ *   { success: true, file_id, folder_id, filename, size_bytes }
  *
- *   Optional CSV columns:
- *     severity        (Low|Medium|High|Critical or integer 1-5, defaults to 1)
- *     incident_date   (YYYY-MM-DD — defaults to today)
- *     status          (defaults to "raw")
- *
- *   Example CSV:
- *     crime_id,crime_type,latitude,longitude,district,severity,incident_date
- *     C-2023-001,Theft,12.9716,77.5946,Central,3,2023-06-01
- *     C-2023-002,Robbery,13.0068,77.5948,North,4,2023-06-02
- *
- * Success (201):
- *   {
- *     "success": true,
- *     "message": "CSV import complete. Inserted: 2/2.",
- *     "summary": {
- *       "total": 2, "valid": 2, "inserted": 2,
- *       "failed": 0, "rejected": 0
- *     },
- *     "rejected_rows":  [],   // rows that failed validation (capped at 100)
- *     "insert_errors":  []    // Catalyst errors from bulk insert batches
- *   }
- *
- * Partial success (201):
- *   Same shape, with rejected_rows and insert_errors populated.
- *
- * Error (400): { success: false, error: "..." }   — bad CSV or missing columns
- * Error (422): { success: false, ... }             — all rows rejected
+ * Error (400): Missing file, wrong extension, exceeds size limit
  */
-router.post('/csv', authenticateToken, requireRole('ADMIN'), asyncHandler(async (req, res) => {
+router.post(
+  '/upload',
+  authenticateToken,
+  requireRole('ADMIN'),
+  (req, res, next) => {
+    csvUpload.single('csv')(req, res, err => {
+      if (err) return res.status(400).json({ success: false, error: err.message });
+      next();
+    });
+  },
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error:   'No file received. Upload a CSV file in the "csv" multipart field.',
+      });
+    }
 
-  // ── Step 1: Extract raw CSV body ────────────────────────────────────────────
-  // express.text() (registered in index.js) sets req.body to a string for
-  // Content-Type: text/csv | text/plain requests.
-  const csvText = typeof req.body === 'string' ? req.body : '';
+    const { originalname, buffer, size } = req.file;
 
-  if (!csvText.trim()) {
+    if (!originalname.toLowerCase().endsWith('.csv')) {
+      return res.status(400).json({
+        success: false,
+        error:   `Only .csv files are accepted. Received: "${originalname}"`,
+      });
+    }
+
+    console.log(`[Import Upload] Uploading "${originalname}" (${size} bytes) to Catalyst File Store`);
+
+    let result;
+    try {
+      result = await filestoreService.uploadCsvBuffer(req, buffer, originalname);
+      console.log(`[Import Upload] Uploaded → file_id=${result.file_id}, folder_id=${result.folder_id}`);
+      return res.json({ success: true, ...result });
+    } catch (err) {
+      console.error('[Import Upload] uploadCsvBuffer threw:', err && err.message);
+      console.error(err && err.stack);
+      const details = {};
+      if (err && typeof err === 'object') {
+        Object.getOwnPropertyNames(err).forEach(k => {
+          try { details[k] = err[k]; } catch (e) { details[k] = String(err[k]); }
+        });
+      }
+      return res.status(500).json({ success: false, error: err && err.message ? err.message : 'Upload failed', details });
+    }
+  })
+);
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/import/validate
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @route   POST /api/import/validate
+ * @access  ADMIN only
+ * @desc    Download a previously uploaded CSV from Catalyst File Store,
+ *          parse and validate every row, detect duplicates in crime_raw,
+ *          check coordinates against the Karnataka bounding box,
+ *          and return a full preview + statistics.
+ *
+ * Request body (JSON):
+ *   { "file_id": "...", "folder_id": "..." }
+ *   (both returned by POST /api/import/upload)
+ *
+ * Success (200):
+ *   {
+ *     success: true,
+ *     total_rows, valid_count, invalid_count,
+ *     duplicate_count, duplicate_check_limit,
+ *     duplicates_truncated,        // true if >500 valid rows (only first 500 checked)
+ *     coord_warning_count,
+ *     headers,
+ *     preview,                     // first 10 rows with status badges
+ *     errors,                      // [{ row, crime_id, errors[] }]
+ *     duplicates,                  // [{ row, crime_id }]
+ *     coord_warnings,              // [{ row, crime_id, lat, lng }]
+ *     can_import                   // true if at least 1 valid, non-duplicate row exists
+ *   }
+ */
+router.post('/validate', authenticateToken, requireRole('ADMIN'), asyncHandler(async (req, res) => {
+  const { file_id, folder_id } = req.body;
+
+  if (!file_id || !folder_id) {
     return res.status(400).json({
       success: false,
-      error:   'Request body is empty. Send a CSV file with Content-Type: text/csv.',
+      error:   'file_id and folder_id are required. Call POST /upload first.',
     });
   }
 
-  // ── Step 2: Parse CSV ───────────────────────────────────────────────────────
+  // ── Download from File Store ────────────────────────────────────────────────
+  const buffer  = await filestoreService.downloadCsvBuffer(req, folder_id, file_id);
+  const csvText = buffer.toString('utf8');
+
+  // ── Parse ───────────────────────────────────────────────────────────────────
+  const { headers, rows } = parseCSV(csvText);
+
+  if (headers.length === 0 || rows.length === 0) {
+    const previewText = String(csvText || '').slice(0, 200);
+    const previewHex = Buffer.from(String(csvText || ''), 'utf8').toString('hex').slice(0, 400);
+    return res.status(400).json({
+      success: false,
+      error:   'CSV has no data rows. Ensure the file has a header row and at least one data row.',
+      raw_preview: previewText,
+      raw_preview_hex: previewHex,
+    });
+  }
+
+  // ── Validate headers ────────────────────────────────────────────────────────
+  const missingHeaders = REQUIRED_HEADERS.filter(h => !headers.includes(h));
+  if (missingHeaders.length > 0) {
+    return res.status(400).json({
+      success:         false,
+      error:           `CSV is missing required columns: ${missingHeaders.join(', ')}`,
+      missing_headers: missingHeaders,
+      present_headers: headers,
+      required_headers: REQUIRED_HEADERS,
+    });
+  }
+
+  // ── Validate every row ──────────────────────────────────────────────────────
+  const validRowsData   = [];   // { rowNum, record }
+  const invalidRows     = [];   // { row, crime_id, errors[] }
+  const coordWarnings   = [];   // { row, crime_id, lat, lng }
+
+  for (let i = 0; i < rows.length; i++) {
+    const record       = mapRowToRecord(rows[i]);
+    const { valid, errors } = validateCsvRecord(record);
+    const rowNum       = i + 2; // +2: 1-indexed + header
+
+    if (valid) {
+      validRowsData.push({ rowNum, record });
+
+      // Coordinate sanity check (warn but do not reject)
+      const { latitude: lat, longitude: lng, crime_id } = record;
+      if (
+        lat < KA_BOUNDS.minLat || lat > KA_BOUNDS.maxLat ||
+        lng < KA_BOUNDS.minLng || lng > KA_BOUNDS.maxLng
+      ) {
+        coordWarnings.push({ row: rowNum, crime_id, lat, lng });
+      }
+    } else {
+      invalidRows.push({
+        row:      rowNum,
+        crime_id: rows[i].crime_id || `(row ${rowNum})`,
+        errors,
+      });
+    }
+  }
+
+  // ── Duplicate detection (DB lookup, capped at DUPE_CHECK_LIMIT) ─────────────
+  const duplicates          = [];
+  const duplicatesCapped    = validRowsData.length > DUPE_CHECK_LIMIT;
+  const rowsToCheck         = validRowsData.slice(0, DUPE_CHECK_LIMIT);
+
+  for (const { rowNum, record } of rowsToCheck) {
+    try {
+      const existing = await crimeRepository.findByCrimeId(req, record.crime_id);
+      if (existing) {
+        duplicates.push({ row: rowNum, crime_id: record.crime_id });
+      }
+    } catch (err) {
+      // Non-fatal — log and continue
+      console.warn(`[Import Validate] findByCrimeId failed for "${record.crime_id}":`, err.message);
+    }
+  }
+
+  // ── Build preview (first 10 rows) ───────────────────────────────────────────
+  const duplicateCrimeIds = new Set(duplicates.map(d => d.crime_id));
+  const preview = rows.slice(0, 10).map((row, i) => {
+    const record             = mapRowToRecord(row);
+    const { valid, errors }  = validateCsvRecord(record);
+    const isDuplicate        = duplicateCrimeIds.has(record.crime_id);
+    return {
+      row:    i + 2,
+      ...record,
+      status: isDuplicate ? 'duplicate' : (valid ? 'valid' : 'invalid'),
+      errors: valid ? [] : errors,
+    };
+  });
+
+  // ── can_import: at least 1 valid row that is NOT a confirmed duplicate ───────
+  const validNonDuplicateCount = validRowsData
+    .slice(0, DUPE_CHECK_LIMIT)
+    .filter(({ record }) => !duplicateCrimeIds.has(record.crime_id))
+    .length
+    + (duplicatesCapped ? validRowsData.length - DUPE_CHECK_LIMIT : 0);
+
+  const can_import = validNonDuplicateCount > 0;
+
+  return res.json({
+    success:                true,
+    total_rows:             rows.length,
+    valid_count:            validRowsData.length,
+    invalid_count:          invalidRows.length,
+    duplicate_count:        duplicates.length,
+    duplicate_check_limit:  DUPE_CHECK_LIMIT,
+    duplicates_truncated:   duplicatesCapped,
+    coord_warning_count:    coordWarnings.length,
+    headers,
+    preview,
+    errors:                 invalidRows,
+    duplicates,
+    coord_warnings:         coordWarnings,
+    can_import,
+  });
+}));
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/import/start
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * @route   POST /api/import/start
+ * @access  ADMIN only
+ * @desc    Download a previously uploaded CSV from Catalyst File Store,
+ *          validate all rows, optionally skip duplicates, bulk-insert valid
+ *          rows into crime_raw (batches of 200), write pipeline logs, and
+ *          delete the staging file.
+ *
+ * Request body (JSON):
+ *   {
+ *     "file_id":          "...",          required
+ *     "folder_id":        "...",          required
+ *     "filename":         "crimes.csv",   optional (used in import_history)
+ *     "skip_duplicates":  true            optional (default: false)
+ *   }
+ *
+ * Success (201):
+ *   {
+ *     success: true,
+ *     message: "...",
+ *     summary: { total, valid, inserted, failed, rejected, skipped_duplicates },
+ *     rejected_rows:      [...],   capped at 100
+ *     insert_errors:      [...],
+ *     skipped_duplicates: [...]    crime_ids that were skipped (capped at 100)
+ *   }
+ *
+ * Partial success (201): same shape with non-zero failed/rejected counts
+ * No rows inserted (422): httpStatus = 422
+ */
+router.post('/start', authenticateToken, requireRole('ADMIN'), asyncHandler(async (req, res) => {
+  const {
+    file_id,
+    folder_id,
+    filename        = 'upload.csv',
+    skip_duplicates = false,
+  } = req.body;
+
+  if (!file_id || !folder_id) {
+    return res.status(400).json({
+      success: false,
+      error:   'file_id and folder_id are required. Call POST /upload first.',
+    });
+  }
+
+  // ── Download from File Store ────────────────────────────────────────────────
+  const buffer  = await filestoreService.downloadCsvBuffer(req, folder_id, file_id);
+  const csvText = buffer.toString('utf8');
+
+  // ── Parse ───────────────────────────────────────────────────────────────────
   const { headers, rows } = parseCSV(csvText);
 
   if (headers.length === 0 || rows.length === 0) {
     return res.status(400).json({
       success: false,
-      error:   'CSV has no data rows. Ensure the file has a header row followed by at least one data row.',
+      error:   'CSV has no data rows.',
     });
   }
 
-  // ── Step 3: Validate required headers ──────────────────────────────────────
+  // ── Validate headers ────────────────────────────────────────────────────────
   const missingHeaders = REQUIRED_HEADERS.filter(h => !headers.includes(h));
   if (missingHeaders.length > 0) {
     return res.status(400).json({
-      success: false,
-      error:   `CSV is missing required columns: ${missingHeaders.join(', ')}`,
-      hint:    `Required headers: ${REQUIRED_HEADERS.join(', ')}`,
+      success:         false,
+      error:           `CSV is missing required columns: ${missingHeaders.join(', ')}`,
+      missing_headers: missingHeaders,
     });
   }
 
-  const importedBy = (req.user && req.user.id) ? req.user.id : 'system';
-  const filename   = (req.headers['x-filename'] || 'upload.csv').substring(0, 500);
+  const importedBy    = (req.user && req.user.id) ? req.user.id : 'system';
+  const safeFilename  = String(filename).substring(0, 500);
 
-  console.log(`[Import CSV] Received ${rows.length} rows from "${filename}" by ${importedBy}`);
+  console.log(`[Import Start] "${safeFilename}" — ${rows.length} rows — by ${importedBy}`);
 
-  // ── Step 4: Start pipeline ──────────────────────────────────────────────────
+  // ── Start pipeline ──────────────────────────────────────────────────────────
   let importId;
   try {
     importId = await pipelineService.startPipeline(req, {
-      filename,
+      filename:     safeFilename,
       source:       'CSV',
       totalRecords: rows.length,
     });
-  } catch (pipelineErr) {
-    console.error('[Import CSV] pipelineService.startPipeline failed:', pipelineErr.message);
+  } catch (err) {
+    console.error('[Import Start] startPipeline failed:', err.message);
     importId = null;
   }
 
-  // ── Step 5: Validate each row ───────────────────────────────────────────────
-  const validRows    = [];  // records that passed validateCrimeRecord()
-  const rejectedRows = [];  // { csvRow, crime_id, errors } for rows that failed
+  // ── Validate every row ──────────────────────────────────────────────────────
+  const validRows    = [];
+  const rejectedRows = [];
 
   for (let i = 0; i < rows.length; i++) {
-    const record    = mapRowToRecord(rows[i]);
+    const record            = mapRowToRecord(rows[i]);
     const { valid, errors } = validateCsvRecord(record);
 
     if (valid) {
       validRows.push(record);
     } else {
       rejectedRows.push({
-        csv_row:  i + 2,  // +2: 1-indexed + header row
+        csv_row:  i + 2,
         crime_id: rows[i].crime_id || `(row ${i + 2})`,
         errors,
       });
     }
   }
 
-  console.log(`[Import CSV] Validation — valid: ${validRows.length}, rejected: ${rejectedRows.length}`);
+  console.log(`[Import Start] Validation — valid: ${validRows.length}, rejected: ${rejectedRows.length}`);
 
+  // ── Optional duplicate filtering ────────────────────────────────────────────
+  let rowsToInsert        = validRows;
+  const skippedDuplicates = [];
+
+  if (skip_duplicates && validRows.length > 0) {
+    const filtered = [];
+    for (const record of validRows) {
+      try {
+        const existing = await crimeRepository.findByCrimeId(req, record.crime_id);
+        if (existing) {
+          skippedDuplicates.push(record.crime_id);
+        } else {
+          filtered.push(record);
+        }
+      } catch (err) {
+        console.warn(`[Import Start] findByCrimeId failed for "${record.crime_id}":`, err.message);
+        filtered.push(record); // include on error to avoid silent data loss
+      }
+    }
+    rowsToInsert = filtered;
+    console.log(`[Import Start] Duplicates skipped: ${skippedDuplicates.length}`);
+  }
+
+  // ── Log validation stage ────────────────────────────────────────────────────
   if (importId) {
     await pipelineService.logStage(
       req, importId, 'VALIDATION',
       rejectedRows.length > 0 ? 'failed' : 'success',
-      `Validated ${rows.length} rows. Valid: ${validRows.length}, Rejected: ${rejectedRows.length}.`,
+      `Valid: ${validRows.length}, Rejected: ${rejectedRows.length}, Skipped duplicates: ${skippedDuplicates.length}.`,
       rows.length
     );
   }
 
-  // ── Step 6: Bulk insert valid rows ─────────────────────────────────────────
+  // ── Bulk insert ─────────────────────────────────────────────────────────────
   let insertResult = { inserted: 0, failed: 0, errors: [] };
 
-  if (validRows.length > 0) {
+  if (rowsToInsert.length > 0) {
     if (importId) {
       await pipelineService.logStage(
         req, importId, 'INSERT', 'started',
-        `Bulk inserting ${validRows.length} valid records in batches of 200.`,
-        validRows.length
+        `Bulk inserting ${rowsToInsert.length} records in batches of 200.`,
+        rowsToInsert.length
       );
     }
 
     try {
-      insertResult = await crimeRepository.insertMany(req, validRows, importedBy);
-    } catch (bulkErr) {
-      // insertMany() already logs full error internally
-      console.error('[Import CSV] crimeRepository.insertMany threw:', bulkErr.message);
-      insertResult = { inserted: 0, failed: validRows.length, errors: [bulkErr.message] };
+      insertResult = await crimeRepository.insertMany(req, rowsToInsert, importedBy);
+    } catch (err) {
+      console.error('[Import Start] insertMany failed:', err.message);
+      insertResult = { inserted: 0, failed: rowsToInsert.length, errors: [err.message] };
     }
 
-    console.log(`[Import CSV] Insert — inserted: ${insertResult.inserted}, failed: ${insertResult.failed}`);
+    console.log(`[Import Start] Insert — inserted: ${insertResult.inserted}, failed: ${insertResult.failed}`);
 
     if (importId) {
       await pipelineService.logStage(
         req, importId, 'INSERT',
         insertResult.failed > 0 ? 'failed' : 'success',
-        `Bulk insert complete. Inserted: ${insertResult.inserted}, Failed: ${insertResult.failed}.`,
+        `Inserted: ${insertResult.inserted}, Failed: ${insertResult.failed}.`,
         insertResult.inserted
       );
     }
   } else {
-    console.warn('[Import CSV] No valid rows to insert after validation.');
+    console.warn('[Import Start] No rows to insert (all rejected or all duplicates).');
     if (importId) {
       await pipelineService.logStage(
         req, importId, 'INSERT', 'failed',
-        'No valid rows to insert — all rows failed validation.',
+        `No rows to insert. Valid: ${validRows.length}, Skipped: ${skippedDuplicates.length}, Rejected: ${rejectedRows.length}.`,
         0
       );
     }
   }
 
-  // ── Step 7: Finalise pipeline ───────────────────────────────────────────────
+  // ── Finalise pipeline ───────────────────────────────────────────────────────
   const totalFailed = rejectedRows.length + insertResult.failed;
-
   if (importId) {
     if (insertResult.inserted === 0) {
       await pipelineService.failPipeline(
         req, importId,
-        `No records were inserted. Rejected: ${rejectedRows.length}, Insert failed: ${insertResult.failed}.`,
+        `No records inserted. Rejected: ${rejectedRows.length}, Insert failed: ${insertResult.failed}, Skipped: ${skippedDuplicates.length}.`,
         0, totalFailed
       );
     } else {
@@ -565,27 +794,108 @@ router.post('/csv', authenticateToken, requireRole('ADMIN'), asyncHandler(async 
     }
   }
 
-  // ── Step 8: Build and return summary ───────────────────────────────────────
-  const allInserted = insertResult.inserted === rows.length;
-  const noneInserted = insertResult.inserted === 0;
-
-  const httpStatus = noneInserted ? 422 : 201;
-
-  return res.status(httpStatus).json({
-    success:        insertResult.inserted > 0,
-    message:        `CSV import complete. Inserted: ${insertResult.inserted}/${rows.length} records.`,
-    summary: {
-      total:    rows.length,
-      valid:    validRows.length,
-      inserted: insertResult.inserted,
-      failed:   insertResult.failed,
-      rejected: rejectedRows.length,
-    },
-    rejected_rows:  rejectedRows.slice(0, 100),   // cap at 100 to avoid huge payloads
-    insert_errors:  insertResult.errors,
+  // ── Clean up staging file (non-blocking — must not crash the response) ───────
+  filestoreService.deleteFile(req, folder_id, file_id).catch(err => {
+    console.warn(`[Import Start] Failed to delete staging file ${file_id}:`, err.message);
   });
 
+  // ── Respond immediately — DBSCAN runs in background ─────────────────────────
+  const httpStatus = insertResult.inserted === 0 ? 422 : 201;
+
+  res.status(httpStatus).json({
+    success:       insertResult.inserted > 0,
+    message:       `Import complete. Inserted: ${insertResult.inserted}/${rows.length} records.` + (insertResult.inserted > 0 ? ' Hotspot clustering queued.' : ''),
+    summary: {
+      total:              rows.length,
+      valid:              validRows.length,
+      inserted:           insertResult.inserted,
+      failed:             insertResult.failed,
+      rejected:           rejectedRows.length,
+      skipped_duplicates: skippedDuplicates.length,
+    },
+    rejected_rows:      rejectedRows.slice(0, 100),
+    insert_errors:      insertResult.errors,
+    skipped_duplicates: skippedDuplicates.slice(0, 100),
+    dbscan_status:      insertResult.inserted > 0 ? 'queued' : 'skipped',
+  });
+
+  // ── Run DBSCAN clustering in background after response is sent ───────────────
+  if (insertResult.inserted > 0) {
+    setImmediate(async () => {
+      const { getCatalystDatetime } = require('../utils/dateUtils');
+      const { addRows: addBulkRows } = require('../services/catalystService');
+      const tmpPath = path.join(__dirname, '..', 'data', `_dbscan_tmp_${Date.now()}.csv`);
+      try {
+        const csvHeader = 'crime_id,crime_type,latitude,longitude,District,incident_date,severity,status\n';
+        const csvBody   = rowsToInsert.map(r =>
+          [r.crime_id, r.crime_type, r.latitude, r.longitude,
+           r.district, r.incident_date || '', r.severity || 1, r.status || 'raw'].join(',')
+        ).join('\n');
+        fs.writeFileSync(tmpPath, csvHeader + csvBody, 'utf8');
+
+        console.log(`[DBSCAN BG] Running DBSCAN on ${rowsToInsert.length} records from uploaded CSV…`);
+        const result = await DbscanRunner.run(tmpPath);
+        console.log(`[DBSCAN BG] Done. clusters=${result.metrics.total_clusters}, noise=${result.metrics.noise_points}`);
+
+        const now = getCatalystDatetime();
+        const clusterRows = (result.clusters || [])
+          .filter(c => c.cluster_label !== -1)
+          .map(c => {
+            const rec = rowsToInsert.find(r => String(r.crime_id) === String(c.crime_id)) || {};
+            return {
+              crime_id:     String(c.crime_id),
+              cluster_id:   parseInt(c.cluster_label, 10),
+              latitude:     parseFloat(rec.latitude)  || 0,
+              longitude:    parseFloat(rec.longitude) || 0,
+              crime_type:   String(rec.crime_type || ''),
+              district:     String(rec.district   || ''),
+              generated_at: now,
+            };
+          });
+
+        const BATCH = 200;
+        for (let i = 0; i < clusterRows.length; i += BATCH) {
+          try {
+            await addBulkRows(req, 'crime_clusters', clusterRows.slice(i, i + BATCH));
+          } catch (e) {
+            console.error(`[DBSCAN BG] crime_clusters batch ${Math.floor(i/BATCH)+1} failed:`, e.message);
+          }
+        }
+        if (clusterRows.length) console.log(`[DBSCAN BG] Saved ${clusterRows.length} rows → crime_clusters.`);
+
+        const hotspotRows = (result.hotspots || []).map(h => {
+          const dominantCrime = Object.entries(h.crime_types || {}).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+          const parts = (h.date_range || '').split(' to ');
+          return {
+            hotspot_id:         `HS-${h.cluster_id}-${Date.now()}`,
+            cluster_id:         String(h.cluster_id),
+            centroid_latitude:  parseFloat(h.centroid_latitude)  || 0,
+            centroid_longitude: parseFloat(h.centroid_longitude) || 0,
+            crime_count:        parseInt(h.crime_count, 10)       || 0,
+            dominant_crime:     String(dominantCrime).substring(0, 100),
+            start_date:         parts[0] ? getCatalystDatetime(parts[0]) : now,
+            end_date:           parts[1] ? getCatalystDatetime(parts[1]) : now,
+            generated_at:       now,
+          };
+        });
+        for (let i = 0; i < hotspotRows.length; i += BATCH) {
+          try {
+            await addBulkRows(req, 'crime_hotspots', hotspotRows.slice(i, i + BATCH));
+          } catch (e) {
+            console.error(`[DBSCAN BG] crime_hotspots batch ${Math.floor(i/BATCH)+1} failed:`, e.message);
+          }
+        }
+        if (hotspotRows.length) console.log(`[DBSCAN BG] Saved ${hotspotRows.length} rows → crime_hotspots.`);
+
+      } catch (err) {
+        console.error('[DBSCAN BG] Fatal error:', err.message);
+      } finally {
+        try { fs.unlinkSync(tmpPath); } catch (_) {}
+      }
+    });
+  }
 }));
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Global error handler for this router
@@ -596,6 +906,19 @@ router.use((err, req, res, _next) => {
   const message = err.message || 'Internal server error.';
   console.error(`[Import Route Error] ${status} — ${message}`);
   return res.status(status).json({ success: false, error: message });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/import/health
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/health', (req, res) => {
+  res.json({
+    success:           true,
+    routes:            ['/upload', '/validate', '/start', '/crimes'],
+    filestoreFolderId: process.env.CATALYST_CSV_FOLDER_ID || '(not set)',
+    timestamp:         new Date().toISOString(),
+  });
 });
 
 module.exports = router;

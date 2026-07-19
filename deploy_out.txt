@@ -1,0 +1,6 @@
+
+[31m[1m[31m×[39m[31m[22m [1mError[22m: [39mToo many arguments specified with the command: [1mappsail[22m.
+
+Use [1mcatalyst help appsail[22m command to get the usage instructions.
+
+[1m[34mREF: [39m[4mhttps://www.zoho.com/catalyst/help/cli-help.html[24m[22m

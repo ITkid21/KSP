@@ -17,14 +17,21 @@ async function request(endpoint, options = {}) {
     ...options,
     headers: { ...getHeaders(), ...options.headers },
   });
-  if (res.status === 401 || res.status === 403) {
-    localStorage.removeItem('ksp_token');
-    localStorage.removeItem('ksp_user');
-    window.location.href = '/login';
-    throw new Error('Unauthorized');
+  const text = await res.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (err) {
+    console.warn('[API] Failed to parse JSON response for', endpoint, err.message, 'raw:', text);
+    data = { error: text || 'Invalid JSON response' };
   }
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Request failed');
+  if (res.status === 401 || res.status === 403) {
+    console.warn('[API] Unauthorized response for', endpoint, res.status, data.error || text);
+    throw new Error(data.error || 'Unauthorized');
+  }
+  if (!res.ok) {
+    throw new Error(data.error || 'Request failed');
+  }
   return data;
 }
 
@@ -83,3 +90,62 @@ export const ai = {
   getInsights: () => request('/ai/insights'),
   generateInsights: () => request('/ai/generate-insights', { method: 'POST' }),
 };
+
+export const hotspots = {
+  getAll:     ()  => request('/hotspots'),
+  getSummary: ()  => request('/hotspots/summary'),
+  getClusters: () => request('/hotspots/clusters'),
+};
+
+// ─── Import API ───────────────────────────────────────────────────────────────
+// Does NOT use the shared request() helper for /upload because that helper
+// injects Content-Type: application/json, which would corrupt multipart bodies.
+
+async function requestFormData(endpoint, formData) {
+  const token = getToken();
+  const res   = await fetch(`${API_BASE}${endpoint}`, {
+    method:  'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body:    formData,           // browser sets multipart boundary automatically
+  });
+  const text = await res.text();
+  let data;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (err) {
+    console.warn('[API] Failed to parse JSON response for', endpoint, err.message, 'raw:', text);
+    data = { error: text || 'Invalid JSON response' };
+  }
+  if (res.status === 401 || res.status === 403) {
+    console.warn('[API] Unauthorized response for', endpoint, res.status, data.error || text);
+    throw new Error(data.error || 'Unauthorized');
+  }
+  if (!res.ok) throw new Error(data.error || 'Upload failed');
+  return data;
+}
+
+export const importApi = {
+  /** Upload a File object to the configured storage backend. Returns { file_id, folder_id, filename, size_bytes }. */
+  upload(file) {
+    const fd = new FormData();
+    fd.append('csv', file);
+    return requestFormData('/import/upload', fd);
+  },
+
+  /** Validate a previously uploaded CSV. Returns preview + stats. */
+  validate(file_id, folder_id) {
+    return request('/import/validate', {
+      method: 'POST',
+      body:   JSON.stringify({ file_id, folder_id }),
+    });
+  },
+
+  /** Start the import. Returns full summary. */
+  start(file_id, folder_id, filename, skip_duplicates = false) {
+    return request('/import/start', {
+      method: 'POST',
+      body:   JSON.stringify({ file_id, folder_id, filename, skip_duplicates }),
+    });
+  },
+};
+

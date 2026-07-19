@@ -10,6 +10,8 @@ import AIAnalyst from './pages/AIAnalyst';
 import Reports from './pages/Reports';
 import Admin from './pages/Admin';
 import InvestigationCopilot from './pages/InvestigationCopilot';
+import DataImport from './pages/DataImport';
+import HotspotAnalytics from './pages/HotspotAnalytics';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -60,7 +62,9 @@ function App() {
           <Route path="ai-analyst" element={<AIAnalyst />} />
           <Route path="reports" element={<Reports />} />
           <Route path="copilot" element={<InvestigationCopilot user={user} />} />
+          <Route path="hotspots" element={<HotspotAnalytics />} />
           {(user.role === 'super_admin' || user.role === 'ADMIN') && <Route path="admin" element={<Admin />} />}
+          {(user.role === 'super_admin' || user.role === 'ADMIN') && <Route path="import" element={<DataImport user={user} />} />}
         </Route>
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />

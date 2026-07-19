@@ -11,12 +11,16 @@ const PORT = process.env.X_ZOHO_CATALYST_LISTEN_PORT || process.env.PORT || 5000
 // ─── Core Middleware ───────────────────────────────────────────────────────
 
 app.use(cors());
+app.use((req, res, next) => {
+  console.log(`[Request] ${req.method} ${req.url}`);
+  next();
+});
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.text({ type: ['text/csv', 'text/plain'], limit: '50mb' })); // CSV ingestion
 
 // Catalyst SDK — initialize per request so req.catalyst is always available
 const { catalystMiddleware } = require('./services/catalystService');
+const { ensureDefaultUsers } = require('./utils/bootstrapDefaultUsers');
 app.use(catalystMiddleware);
 
 // ─── Static Client ────────────────────────────────────────────────────────
@@ -38,6 +42,7 @@ app.use('/api/analytics',   require('./routes/analytics'));
 app.use('/api/reports',     require('./routes/reports'));
 app.use('/api/ai',          require('./routes/ai'));
 app.use('/api/copilot',     require('./routes/copilot'));
+app.use('/api/hotspots',    require('./routes/hotspots'));
 
 // ─── Health Check ────────────────────────────────────────────────────────
 
@@ -60,7 +65,12 @@ app.get('/api/resource-allocation',soon('Resource Allocation Engine — Coming S
 
 app.use((err, req, res, _next) => {
   console.error('[Global Error]', err.message);
-  res.status(err.status || 500).json({ success: false, error: err.message || 'Internal server error.' });
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || 'Internal server error.',
+    stack: err.stack || null,
+  });
 });
 
 // ─── SPA Fallback ────────────────────────────────────────────────────────
@@ -75,7 +85,13 @@ app.get('*', (req, res) => {
 
 // ─── Start ───────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  try {
+    await ensureDefaultUsers();
+  } catch (err) {
+    console.warn('[Startup] Default users bootstrap skipped:', err.message);
+  }
+
   console.log(`\n╔══════════════════════════════════════════════════╗`);
   console.log(`║  KSP Crime Intelligence Platform                ║`);
   console.log(`║  Server running on http://localhost:${PORT}        ║`);

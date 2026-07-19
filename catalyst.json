@@ -22,7 +22,8 @@
   "functions": {
     "source": "functions",
     "targets": [
-      "ml_engine"
-    ]
+      "project_rainfall_function"
+    ],
+    "ignore": []
   }
 }

@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../models/database');
 const { authenticateToken, authorizeRoles } = require('../middleware/auth');
+const DbscanRunner = require('../services/dbscanRunner');
 const router = express.Router();
 
 router.get('/', authenticateToken, (req, res) => {
@@ -14,38 +15,19 @@ router.get('/', authenticateToken, (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Internal server error.' }); }
 });
 
-router.post('/generate', authenticateToken, authorizeRoles('super_admin', 'analyst'), (req, res) => {
+router.post('/generate', authenticateToken, authorizeRoles('super_admin', 'analyst'), async (req, res) => {
   try {
+    const { predictions, metrics } = await DbscanRunner.run();
     db.clear('predictions');
-    const locations = db.getAll('crime_locations');
-    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-    const predictions = [];
-
-    locations.forEach(loc => {
-      let baseRisk = loc.severity === 'critical' ? 0.85 : loc.severity === 'high' ? 0.65 : loc.severity === 'medium' ? 0.45 : 0.25;
-      let caseFactor = Math.min((loc.cases || 0) / 50000, 1);
-      let riskScore = Math.min(baseRisk + caseFactor * 0.15, 0.99);
-      let confidence = (loc.cases || 0) > 1000 ? 0.78 : (loc.cases || 0) > 500 ? 0.65 : 0.52;
-
-      months.forEach((month, idx) => {
-        let v = 1 + (Math.sin(idx * Math.PI / 6) * 0.1);
-        predictions.push({
-          id: predictions.length + 1, district: loc.district,
-          latitude: loc.latitude + (Math.random() - 0.5) * 0.05,
-          longitude: loc.longitude + (Math.random() - 0.5) * 0.05,
-          predicted_crime_type: loc.crime_type,
-          risk_score: parseFloat((riskScore * v).toFixed(3)),
-          confidence_score: parseFloat(confidence.toFixed(3)),
-          predicted_month: month, predicted_year: 2025,
-          model_version: 'rule-based-v1', is_validated: 0,
-          created_at: new Date().toISOString()
-        });
-      });
-    });
-
     db.insertMany('predictions', predictions);
-    res.json({ message: 'Predictions generated.', count: predictions.length });
-  } catch (err) { console.error(err); res.status(500).json({ error: 'Internal server error.' }); }
+    res.json({ 
+      message: `Predictions generated successfully using DBSCAN. Found ${metrics.number_of_clusters} clusters with ${metrics.noise_count} noise points in ${metrics.runtime_seconds.toFixed(2)}s.`, 
+      count: predictions.length 
+    });
+  } catch (err) { 
+    console.error('[DBSCAN Generation Error]', err); 
+    res.status(500).json({ error: `Generation failed: ${err.message}` }); 
+  }
 });
 
 router.get('/summary', authenticateToken, (req, res) => {

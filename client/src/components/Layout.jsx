@@ -8,6 +8,7 @@ const navItems = [
   { section: 'Analysis', items: [
     { path: '/analytics', icon: '📈', label: 'Analytics' },
     { path: '/predictions', icon: '🔮', label: 'Predictions' },
+    { path: '/hotspots', icon: '🔥', label: 'Hotspot Analytics' },
     { path: '/ai-analyst', icon: '🤖', label: 'AI Analyst' },
     { path: '/copilot', icon: '🕵️', label: 'Investigation Copilot' },
   ]},
@@ -17,7 +18,8 @@ const navItems = [
 ];
 
 const adminItems = { section: 'Administration', items: [
-  { path: '/admin', icon: '⚙️', label: 'User Management' },
+  { path: '/import', icon: '📥', label: 'Data Import' },
+  { path: '/admin',  icon: '⚙️', label: 'User Management' },
 ]};
 
 export default function Layout({ user, onLogout }) {

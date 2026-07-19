@@ -19,7 +19,11 @@ function requireRole(...allowedRoles) {
       return res.status(401).json({ success: false, error: 'Not authenticated.' });
     }
     const role = (req.user.role || '').toUpperCase();
-    if (!allowedRoles.map(r => r.toUpperCase()).includes(role)) {
+    const normalized = allowedRoles.map(r => r.toUpperCase());
+    if (role === 'SUPER_ADMIN' && normalized.includes('ADMIN')) {
+      return next();
+    }
+    if (!normalized.includes(role)) {
       return res.status(403).json({
         success: false,
         error: `Access denied. Required role(s): ${allowedRoles.join(', ')}.`

@@ -1,0 +1,2 @@
+crime_id,crime_type,latitude,longitude,district,incident_date,severity,status
+1,THEFT,12.9716,77.5946,Bangalore,2024-07-01,1,raw

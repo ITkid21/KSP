@@ -66,7 +66,7 @@ async function run() {
     const accessToken = refreshRes.access_token;
 
     console.log('Fetching columns...');
-    const url = 'https://api.catalyst.zoho.in/baas/v1/project/43082000000013050/table/system_users/column';
+    const url = 'https://api.catalyst.zoho.in/baas/v1/project/43082000000013050/table/crime_hotspots/column';
     const res = await request(url, 'GET', {
       'Authorization': `Zoho-oauthtoken ${accessToken}`,
       'PROJECT_ID': '50042774083',

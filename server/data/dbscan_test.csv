@@ -1,0 +1,2 @@
+crime_id,crime_type,latitude,longitude,District,incident_date,severity,status
+C001,Theft,12.9716,77.5946,Bengaluru,2024-01-15,2,raw

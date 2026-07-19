@@ -1,33 +1,86 @@
 const catalyst = require('zcatalyst-sdk-node');
+const { initializeLocalApp } = require('../utils/localCatalyst');
 require('dotenv').config();
 
-/**
- * Get Catalyst app instance from request or environment
- * @param {Object} [req] - Express request object
- */
-function getCatalystApp(req) {
+const storageFallback = require('./storageFallback');
+
+function buildCatalystHeaders(req) {
+  const headers = {};
+  const source = req && req.headers ? req.headers : {};
+
+  const projectId = source['x-zc-projectid'] || source['X-ZC-PROJECTID'] || process.env['x-zc-projectid'] || process.env['X-ZC-PROJECTID'];
+  const projectKey = source['x-zc-project-key'] || source['X-ZC-PROJECT-KEY'] || process.env['x-zc-project-key'] || process.env['X-ZC-PROJECT-KEY'];
+  const environment = source['x-zc-environment'] || source['X-ZC-ENVIRONMENT'] || process.env['x-zc-environment'] || process.env['X-ZC-ENVIRONMENT'] || process.env['CATALYST_ENVIRONMENT'] || 'Development';
+
+  if (projectId && projectKey) {
+    headers['x-zc-projectid'] = String(projectId);
+    headers['x-zc-project-key'] = String(projectKey);
+    headers['x-zc-environment'] = String(environment);
+  }
+
+  const adminCredential = process.env.CATALYST_ADMIN_CRED_TYPE || 'token';
+  const adminToken = process.env.CATALYST_ADMIN_CRED_TOKEN || process.env.CATALYST_ADMIN_TOKEN || process.env.CATALYST_AUTH_TOKEN || '';
+  const userCredential = process.env.CATALYST_USER_CRED_TYPE || 'token';
+  const userToken = process.env.CATALYST_USER_CRED_TOKEN || process.env.CATALYST_USER_TOKEN || adminToken || '';
+
+  if (adminToken) {
+    headers['x-zc-admin-cred-type'] = adminCredential;
+    headers['x-zc-admin-cred-token'] = String(adminToken);
+  }
+
+  if (userToken) {
+    headers['x-zc-user-cred-type'] = userCredential;
+    headers['x-zc-user-cred-token'] = String(userToken);
+  }
+
+  headers['x-zc-user-type'] = 'admin';
+
+  return headers;
+}
+
+async function initializeCatalystApp(req) {
   if (req && req.catalyst) {
     return req.catalyst;
   }
-  
-  // Try initializing without request (for background scripts/seeders)
+
+  const catalystHeaders = buildCatalystHeaders(req);
+  const hasProjectIdentity = Boolean(catalystHeaders['x-zc-projectid'] && catalystHeaders['x-zc-project-key']);
+  const hasCredential = Boolean(catalystHeaders['x-zc-admin-cred-token'] || catalystHeaders['x-zc-user-cred-token']);
+
+  if (hasProjectIdentity && hasCredential) {
+    try {
+      return catalyst.initialize({ catalystHeaders }, { type: 'basicio' });
+    } catch (err) {
+      console.error('[Catalyst Init Error]', err);
+      console.error(err.stack);
+      console.error('Execution Path: request-less init (getCatalystApp)');
+    }
+  }
+
   try {
-    return catalyst.initialize();
+    console.log('[Catalyst Service] Falling back to CLI-based Catalyst initialization.');
+    return await initializeLocalApp();
   } catch (err) {
-    console.error('[Catalyst Init Error]', err);
-    console.error(err.stack);
-    console.error('Execution Path: request-less init (getCatalystApp)');
-    // If running in development local script and no env set, return null
+    console.warn('[Catalyst Service] CLI-based Catalyst initialization failed:', err.message);
+    console.warn(err.stack);
     return null;
   }
 }
 
 /**
+ * Get Catalyst app instance from request or environment
+ * @param {Object} [req] - Express request object
+ */
+async function getCatalystApp(req) {
+  return await initializeCatalystApp(req);
+}
+
+/**
  * Express middleware to initialize Catalyst SDK for each request
  */
-function catalystMiddleware(req, res, next) {
+async function catalystMiddleware(req, res, next) {
   try {
-    const app = catalyst.initialize(req);
+    const app = await initializeCatalystApp(req);
     req.catalyst = app;
     req.catalystApp = app;
     next();
@@ -36,18 +89,8 @@ function catalystMiddleware(req, res, next) {
     console.error(err.stack);
     console.error('Execution Path: per request init (catalystMiddleware)');
     console.warn('[Catalyst Service] Failed to initialize Catalyst SDK per request. Falling back to local environment credentials if configured.');
-    try {
-      // In local mode, try request-less init
-      const app = catalyst.initialize();
-      req.catalyst = app;
-      req.catalystApp = app;
-    } catch (localErr) {
-      console.error('[Catalyst Init Error]', localErr);
-      console.error(localErr.stack);
-      console.error('Execution Path: request-less init fallback (catalystMiddleware)');
-      req.catalyst = null;
-      req.catalystApp = null;
-    }
+    req.catalyst = null;
+    req.catalystApp = null;
     next();
   }
 }
@@ -58,11 +101,16 @@ function catalystMiddleware(req, res, next) {
  * @param {string} query - ZCQL query string
  */
 async function executeQuery(req, query) {
-  const app = getCatalystApp(req);
+  const app = await getCatalystApp(req);
   if (!app) {
-    throw new Error('Catalyst SDK is not initialized. Ensure request context or environment configuration exists.');
+    return storageFallback.executeQuery(req, query);
   }
-  return await app.zcql().executeZCQLQuery(query);
+  try {
+    return await app.zcql().executeZCQLQuery(query);
+  } catch (err) {
+    console.warn('[Catalyst Service] Falling back to local storage after query error:', err.message);
+    return storageFallback.executeQuery(req, query);
+  }
 }
 
 /**
@@ -72,12 +120,17 @@ async function executeQuery(req, query) {
  * @param {Object} rowData - Object containing column keys and values
  */
 async function insertRow(req, tableName, rowData) {
-  const app = getCatalystApp(req);
+  const app = await getCatalystApp(req);
   if (!app) {
-    throw new Error('Catalyst SDK is not initialized.');
+    return storageFallback.insertRow(req, tableName, rowData);
   }
-  const table = app.datastore().table(tableName);
-  return await table.insertRow(rowData);
+  try {
+    const table = app.datastore().table(tableName);
+    return await table.insertRow(rowData);
+  } catch (err) {
+    console.warn('[Catalyst Service] Falling back to local storage after insert error:', err.message);
+    return storageFallback.insertRow(req, tableName, rowData);
+  }
 }
 
 /**
@@ -87,12 +140,17 @@ async function insertRow(req, tableName, rowData) {
  * @param {Array<Object>} rows - Array of objects containing column keys and values
  */
 async function addRows(req, tableName, rows) {
-  const app = getCatalystApp(req);
+  const app = await getCatalystApp(req);
   if (!app) {
-    throw new Error('Catalyst SDK is not initialized.');
+    return storageFallback.addRows(req, tableName, rows);
   }
-  const table = app.datastore().table(tableName);
-  return await table.addRow(rows);
+  try {
+    const table = app.datastore().table(tableName);
+    return await table.addRow(rows);
+  } catch (err) {
+    console.warn('[Catalyst Service] Falling back to local storage after addRows error:', err.message);
+    return storageFallback.addRows(req, tableName, rows);
+  }
 }
 
 /**
@@ -102,12 +160,17 @@ async function addRows(req, tableName, rows) {
  * @param {Object} rowData - Row object (must include ROWID field)
  */
 async function updateRow(req, tableName, rowData) {
-  const app = getCatalystApp(req);
+  const app = await getCatalystApp(req);
   if (!app) {
-    throw new Error('Catalyst SDK is not initialized.');
+    return storageFallback.updateRow(req, tableName, rowData);
   }
-  const table = app.datastore().table(tableName);
-  return await table.updateRow(rowData);
+  try {
+    const table = app.datastore().table(tableName);
+    return await table.updateRow(rowData);
+  } catch (err) {
+    console.warn('[Catalyst Service] Falling back to local storage after update error:', err.message);
+    return storageFallback.updateRow(req, tableName, rowData);
+  }
 }
 
 module.exports = {
