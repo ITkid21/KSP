@@ -15,7 +15,16 @@ export default function Login({ onLogin }) {
       const data = await auth.login(username, password);
       onLogin(data.user, data.token);
     } catch (err) {
-      setError(err.message || 'Login failed');
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('invalid')) {
+        setError('Invalid username or password. Please try again.');
+      } else if (msg.toLowerCase().includes('deactivated')) {
+        setError('Your account has been deactivated. Contact your administrator.');
+      } else if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('fetch')) {
+        setError('Unable to connect to the server. Please try again.');
+      } else {
+        setError(msg || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

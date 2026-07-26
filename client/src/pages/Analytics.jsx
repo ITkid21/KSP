@@ -36,6 +36,8 @@ export default function Analytics() {
     yearComparison: null
   });
 
+  const [error, setError] = useState('');
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       const token = localStorage.getItem('ksp_token');
@@ -58,7 +60,7 @@ export default function Analytics() {
 
         setData({ overview, categoryBreakdown, severity, yearComparison });
       } catch (err) {
-        console.error('Error fetching analytics:', err);
+        setError('Unable to load analytics data. Please refresh the page or contact support.');
       } finally {
         setLoading(false);
       }
@@ -67,8 +69,27 @@ export default function Analytics() {
     fetchAnalytics();
   }, []);
 
-  if (loading || !data.overview) {
-    return <div className="loading"><div className="spinner"></div>Loading Analytics...</div>;
+  if (loading) {
+    return (
+      <>
+        <div className="page-header"><div><h2>Deep Analytics</h2><div className="page-header-sub">Karnataka State Police — Crime Statistical Analysis</div></div></div>
+        <div className="page-body"><div className="loading"><div className="spinner"></div>Loading Analytics...</div></div>
+      </>
+    );
+  }
+
+  if (error || !data.overview) {
+    return (
+      <>
+        <div className="page-header"><div><h2>Deep Analytics</h2></div></div>
+        <div className="page-body">
+          <div className="error-banner">
+            <span style={{ marginRight: 8 }}>⚠</span>
+            {error || 'Unable to load analytics data. Please refresh the page.'}
+          </div>
+        </div>
+      </>
+    );
   }
 
   const { overview, categoryBreakdown, severity, yearComparison } = data;
@@ -133,13 +154,31 @@ export default function Analytics() {
   };
 
   return (
-    <div className="page-body">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Deep Analytics</h2>
+    <>
+      <div className="page-header">
+        <div>
+          <h2>Deep Analytics</h2>
+          <div className="page-header-sub">Karnataka State Police — Crime Statistical Analysis</div>
+        </div>
         <div className="badge badge-info">Data updated to 2024</div>
       </div>
 
-      <div className="kpi-grid">
+      <div className="page-body">
+        <div className="page-intro">
+          <div className="page-intro-icon">📈</div>
+          <div className="page-intro-content">
+            <div className="page-intro-title">Crime Analytics Engine</div>
+            <div className="page-intro-desc">
+              <strong>Description:</strong> Advanced statistical reporting engine containing multi-dimensional breakdowns, risk profiling, and historical YoY (Year-over-Year) growth rate analysis.
+              <br />
+              <strong>Purpose:</strong> To uncover deep patterns, hotspots, and growth percentages for strategic, long-term intelligence-led policing strategies.
+              <br />
+              <strong>Instructions:</strong> Use the interactive charts to drill down into monthly records, location risk distributions, and YoY growth tables.
+            </div>
+          </div>
+        </div>
+
+        <div className="kpi-grid">
         <div className="kpi-card">
           <div className="kpi-card-label">Total Records Processed</div>
           <div className="kpi-card-value">{overview.totalRecords.toLocaleString()}</div>
@@ -225,6 +264,7 @@ export default function Analytics() {
           </table>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

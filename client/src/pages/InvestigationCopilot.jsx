@@ -109,7 +109,7 @@ export default function InvestigationCopilot({ user }) {
         fetchTimeline(caseId);
       }
     } catch (err) {
-      console.error('Error fetching case details:', err);
+      /* error handled silently */
     } finally {
       setLoadingDetails(false);
     }
@@ -124,7 +124,7 @@ export default function InvestigationCopilot({ user }) {
         setSummary(data);
       }
     } catch (err) {
-      console.error('Error fetching summary:', err);
+      /* silently handled */
     } finally {
       setLoadingSummary(false);
     }
@@ -141,10 +141,9 @@ export default function InvestigationCopilot({ user }) {
       if (res.ok) {
         const data = await res.json();
         setSummary(data);
-        alert('Case Summary generated successfully!');
       }
     } catch (err) {
-      console.error('Error generating summary:', err);
+      /* silently handled */
     } finally {
       setLoadingSummary(false);
     }
@@ -159,7 +158,7 @@ export default function InvestigationCopilot({ user }) {
         setTimeline(data);
       }
     } catch (err) {
-      console.error('Error fetching timeline:', err);
+      /* silently handled */
     } finally {
       setLoadingTimeline(false);
     }
@@ -176,10 +175,9 @@ export default function InvestigationCopilot({ user }) {
       if (res.ok) {
         const data = await res.json();
         setTimeline(data);
-        alert('Chronological Timeline extracted successfully!');
       }
     } catch (err) {
-      console.error('Error generating timeline:', err);
+      /* silently handled */
     } finally {
       setLoadingTimeline(false);
     }
@@ -188,7 +186,6 @@ export default function InvestigationCopilot({ user }) {
   const handleCreateCase = async (e) => {
     e.preventDefault();
     if (!newCaseId || !newCaseName) {
-      alert('Please fill out all fields');
       return;
     }
     try {
@@ -209,14 +206,13 @@ export default function InvestigationCopilot({ user }) {
         alert(errData.error || 'Failed to create case');
       }
     } catch (err) {
-      console.error('Error creating case:', err);
+      /* silently handled */
     }
   };
 
   const handleUploadDocument = async (e) => {
     e.preventDefault();
     if (!newDocName || !newDocContent) {
-      alert('Please fill out document details');
       return;
     }
     setUploadingDoc(true);
@@ -240,7 +236,7 @@ export default function InvestigationCopilot({ user }) {
         alert('Failed to upload document');
       }
     } catch (err) {
-      console.error('Error uploading document:', err);
+      /* silently handled */
     } finally {
       setUploadingDoc(false);
     }
@@ -272,11 +268,9 @@ export default function InvestigationCopilot({ user }) {
         const reply = await res.json();
         setChatMessages(prev => prev.filter(m => m.id !== userMsg.id).concat(reply));
       } else {
-        alert('Failed to get answer from copilot.');
         setChatMessages(prev => prev.filter(m => m.id !== userMsg.id));
       }
     } catch (err) {
-      console.error('Chat error:', err);
       setChatMessages(prev => prev.filter(m => m.id !== userMsg.id));
     } finally {
       setSendingChat(false);
@@ -298,7 +292,7 @@ export default function InvestigationCopilot({ user }) {
         setSearchResults(data);
       }
     } catch (err) {
-      console.error('Search error:', err);
+      /* silently handled */
     } finally {
       setSearching(false);
     }
@@ -314,7 +308,7 @@ export default function InvestigationCopilot({ user }) {
         setExplanation(data);
       }
     } catch (err) {
-      console.error('Explanation error:', err);
+      /* silently handled */
     } finally {
       setExplaining(false);
     }
@@ -352,7 +346,7 @@ export default function InvestigationCopilot({ user }) {
       <div className="copilot-header">
         <div className="header-left">
           <h2>🕵️ Investigation Copilot</h2>
-          <p>NotebookLM-style workspace analysis, vector similarity court judgment search, and ML explanation engine.</p>
+          <p>AI-powered case workspace: chat with case files, search court judgments, and explain ML predictions.</p>
         </div>
         <div className="header-right">
           <div className="case-selector-group">
@@ -371,6 +365,20 @@ export default function InvestigationCopilot({ user }) {
               </select>
             )}
             <button className="btn btn-primary" onClick={() => setShowCreateCase(true)}>+ New Workspace</button>
+        </div>
+      </div>
+      </div>
+      {/* Page Introduction */}
+      <div className="page-intro" style={{ marginBottom: 16 }}>
+        <div className="page-intro-icon">🕵️</div>
+        <div className="page-intro-content">
+          <div className="page-intro-title">Investigation Copilot Case Workspace</div>
+          <div className="page-intro-desc">
+            <strong>Description:</strong> Advanced vector-similarity powered document processing and decision-support workspace simulating dynamic query expansion.
+            <br />
+            <strong>Purpose:</strong> To help investigators interrogate uploaded case files (FIRs, charge sheets, witness statements), search legal precedents, and examine predictive models.
+            <br />
+            <strong>Instructions:</strong> Select or create an Active Workspace, upload files using the Left Panel, and interact via the tabbed chat/summary/timeline windows on the right.
           </div>
         </div>
       </div>

@@ -12,10 +12,12 @@ export default function Reports() {
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const generateReport = async () => {
     setLoading(true);
     setReportData(null);
+    setErrorMsg('');
     const token = localStorage.getItem('ksp_token');
     const headers = { 'Authorization': `Bearer ${token}` };
 
@@ -27,7 +29,7 @@ export default function Reports() {
       else if (reportType === 'category') endpoint = `/reports/category?category=${category}`;
 
       if (!endpoint || (reportType === 'district' && !district) || (reportType === 'category' && !category)) {
-        alert('Please fill all required fields');
+        setErrorMsg('Please fill all required fields before generating a report.');
         setLoading(false);
         return;
       }
@@ -37,11 +39,10 @@ export default function Reports() {
       if (res.ok) {
         setReportData(data);
       } else {
-        alert(data.error || 'Failed to generate report');
+        setErrorMsg(data.error || 'Failed to generate report. Please check your parameters.');
       }
     } catch (err) {
-      console.error(err);
-      alert('Error fetching report data');
+      setErrorMsg('Unable to connect to the server. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -123,11 +124,11 @@ export default function Reports() {
   };
 
   return (
-    <div className="page-body">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+    <>
+      <div className="page-header">
         <div>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Report Generation</h2>
-          <p style={{ fontSize: '12px', color: '#94a3b8' }}>Create and export custom analytical reports</p>
+          <h2>Report Generation</h2>
+          <div className="page-header-sub">Karnataka State Police — Analytical Reports</div>
         </div>
         {reportData && (
           <div className="btn-group">
@@ -136,6 +137,33 @@ export default function Reports() {
           </div>
         )}
       </div>
+
+      <div className="page-body">
+        <div className="page-intro">
+          <div className="page-intro-icon">📋</div>
+          <div className="page-intro-content">
+            <div className="page-intro-title">Report Generation Centre</div>
+            <div className="page-intro-desc">
+              <strong>Description:</strong> Formal reporting utility compiling yearly summaries, monthly statistics, and district-level risk forecasts into structured tabular formats.
+              <br />
+              <strong>Purpose:</strong> To prepare standardized documentation and audit trails for internal administration, court proceedings, and executive review.
+              <br />
+              <strong>Instructions:</strong> Select a Report Type from the configuration panel, fill in the filters (Year, Month, or District), click "Generate Data", and use the export buttons.
+            </div>
+            <div className="page-intro-steps">
+              <span className="intro-step">① Select report type</span>
+              <span className="intro-step">② Set parameters</span>
+              <span className="intro-step">③ Generate &amp; preview</span>
+              <span className="intro-step">④ Export PDF / CSV</span>
+            </div>
+          </div>
+        </div>
+
+        {errorMsg && (
+          <div className="error-banner" style={{ marginBottom: 16 }}>
+            <span style={{ marginRight: 8 }}>⚠</span>{errorMsg}
+          </div>
+        )}
 
       <div className="chart-card" style={{ marginBottom: '20px' }}>
         <div className="chart-card-header">
@@ -252,6 +280,7 @@ export default function Reports() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

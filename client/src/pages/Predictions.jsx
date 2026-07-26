@@ -7,6 +7,8 @@ export default function Predictions() {
   const [generating, setGenerating] = useState(false);
   const [data, setData] = useState({ list: [], summary: null });
   const [user, setUser] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   
   // Filters
   const [district, setDistrict] = useState('');
@@ -34,7 +36,7 @@ export default function Predictions() {
 
       setData({ list, summary });
     } catch (err) {
-      console.error('Error fetching predictions:', err);
+      setErrorMsg('Unable to load predictions. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -47,9 +49,10 @@ export default function Predictions() {
   }, [district, crimeType]);
 
   const handleGenerate = async () => {
-    if (!window.confirm('Are you sure you want to run the prediction model? This will replace existing predictions.')) return;
-    
+    if (!window.confirm('Run the prediction model? This will replace existing predictions.')) return;
     setGenerating(true);
+    setSuccessMsg('');
+    setErrorMsg('');
     const token = localStorage.getItem('ksp_token');
     try {
       const res = await fetch(`${API_URL}/predictions/generate`, {
@@ -58,13 +61,13 @@ export default function Predictions() {
       });
       const result = await res.json();
       if (res.ok) {
-        alert(result.message);
+        setSuccessMsg(result.message || 'Prediction model completed successfully.');
         fetchPredictions();
       } else {
-        alert(result.error || 'Generation failed');
+        setErrorMsg(result.error || 'Prediction model failed. Please try again.');
       }
     } catch (err) {
-      alert('Error generating predictions');
+      setErrorMsg('Unable to run the prediction model. Please check your connection.');
     } finally {
       setGenerating(false);
     }
@@ -78,30 +81,56 @@ export default function Predictions() {
   };
 
   if (loading && data.list.length === 0) {
-    return <div className="loading"><div className="spinner"></div>Loading Predictive Models...</div>;
+    return (
+      <>
+        <div className="page-header"><div><h2>Predictive Policing</h2><div className="page-header-sub">Karnataka State Police — AI-Driven Crime Forecasts</div></div></div>
+        <div className="page-body"><div className="loading"><div className="spinner"></div>Loading Predictive Models...</div></div>
+      </>
+    );
   }
 
   const uniqueDistricts = [...new Set(data.list.map(p => p.district))];
   const uniqueTypes = [...new Set(data.list.map(p => p.predicted_crime_type))];
 
   return (
-    <div className="page-body">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+    <>
+      <div className="page-header">
         <div>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Predictive Policing</h2>
-          <p style={{ fontSize: '12px', color: '#94a3b8' }}>AI-driven forecast models for proactive deployment</p>
+          <h2>Predictive Policing</h2>
+          <div className="page-header-sub">Karnataka State Police — AI-Driven Crime Forecasts</div>
         </div>
-        
         {user && (user.role === 'super_admin' || user.role === 'ADMIN' || user.role === 'analyst' || user.role === 'ANALYST') && (
-          <button 
-            className="btn btn-primary" 
-            onClick={handleGenerate}
-            disabled={generating}
-          >
+          <button className="btn btn-primary" onClick={handleGenerate} disabled={generating}>
             {generating ? 'Running Model...' : 'Run New Prediction Model'}
           </button>
         )}
       </div>
+
+      <div className="page-body">
+        <div className="page-intro">
+          <div className="page-intro-icon">🔮</div>
+          <div className="page-intro-content">
+            <div className="page-intro-title">AI Prediction Engine</div>
+            <div className="page-intro-desc">
+              <strong>Description:</strong> Machine learning predictive analytics generating next-month crime probability forecasts and threat scores based on historical data.
+              <br />
+              <strong>Purpose:</strong> To proactively anticipate incident spikes and focus policing coverage on high-probability risk areas.
+              <br />
+              <strong>Instructions:</strong> Review the forecast list and threat score badges. Authorised analysts can trigger a new ML run by clicking the button in the top-right corner.
+            </div>
+          </div>
+        </div>
+
+        {errorMsg && (
+          <div className="error-banner" style={{ marginBottom: 16 }}>
+            <span style={{ marginRight: 8 }}>⚠</span>{errorMsg}
+          </div>
+        )}
+        {successMsg && (
+          <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#6ee7b7', padding: '10px 14px', borderRadius: '6px', marginBottom: 16, fontSize: 13 }}>
+            ✓ {successMsg}
+          </div>
+        )}
 
       {data.summary && (
         <div className="kpi-grid">
@@ -185,6 +214,7 @@ export default function Predictions() {
           </tbody>
         </table>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

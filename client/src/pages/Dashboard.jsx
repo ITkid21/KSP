@@ -24,20 +24,23 @@ export default function Dashboard() {
   const [years, setYears] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState('');
+
   useEffect(() => {
     loadData();
   }, []);
 
   useEffect(() => {
     if (selectedYear) {
-      crime.getByMonth(selectedYear).then(setMonthly).catch(console.error);
-      crime.getByCategory(selectedYear, 15).then(setCategories).catch(console.error);
+      crime.getByMonth(selectedYear).then(setMonthly).catch(() => {});
+      crime.getByCategory(selectedYear, 15).then(setCategories).catch(() => {});
     }
   }, [selectedYear]);
 
   async function loadData() {
     try {
       setLoading(true);
+      setError('');
       const [s, y, t, d] = await Promise.all([
         crime.getSummary(), crime.getYears(), crime.getGrowthTrends(), crime.getDistrictWise()
       ]);
@@ -52,7 +55,9 @@ export default function Dashboard() {
       ]);
       setMonthly(m);
       setCategories(c);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      setError('Unable to load dashboard data. Please refresh or contact support.');
+    }
     finally { setLoading(false); }
   }
 
@@ -75,6 +80,27 @@ export default function Dashboard() {
       </div>
 
       <div className="page-body">
+        {/* Page Introduction */}
+        <div className="page-intro">
+          <div className="page-intro-icon">📊</div>
+          <div className="page-intro-content">
+            <div className="page-intro-title">Crime Intelligence Dashboard</div>
+            <div className="page-intro-desc">
+              <strong>Description:</strong> A comprehensive, real-time command centre displaying key performance indicators, crime trends, and district risk classifications across Karnataka.
+              <br />
+              <strong>Purpose:</strong> To assist law enforcement administrators in rapid assessment of current crime statistics and tactical resource allocation.
+              <br />
+              <strong>Instructions:</strong> Use the dropdown selector in the top-right corner to view data for specific calendar years. Hover over chart elements for precise case counts.
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="error-banner" style={{ marginBottom: 16 }}>
+            <span style={{ marginRight: 8 }}>⚠</span>{error}
+          </div>
+        )}
+
         {/* KPI Cards */}
         <div className="kpi-grid">
           <div className="kpi-card">

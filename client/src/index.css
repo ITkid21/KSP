@@ -1580,3 +1580,93 @@ body {
   .summary-grid { grid-template-columns: 1fr; }
 }
 
+/* ================================================================
+   PAGE INTRODUCTION BANNER
+   ================================================================ */
+
+.page-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(59,130,246,0.07) 0%, rgba(6,182,212,0.05) 100%);
+  border: 1px solid rgba(59,130,246,0.2);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.page-intro-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.page-intro-content { flex: 1; }
+
+.page-intro-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+}
+
+.page-intro-desc {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+
+.page-intro-steps {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.intro-step {
+  background: rgba(59,130,246,0.12);
+  border: 1px solid rgba(59,130,246,0.25);
+  color: #93c5fd;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+/* ================================================================
+   ERROR BANNER
+   ================================================================ */
+
+.error-banner {
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #fca5a5;
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+}
+
+/* ================================================================
+   RESPONSIVE TABLE FIXES
+   ================================================================ */
+
+@media (max-width: 768px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .filter-bar { flex-wrap: wrap; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .data-table { font-size: 11px; }
+  .data-table th, .data-table td { padding: 6px 8px; }
+  .sidebar { width: 200px; }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main-content { margin-left: 0; }
+}
+
+

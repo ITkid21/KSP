@@ -6,6 +6,8 @@ export default function AIAnalyst() {
   const [insights, setInsights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const fetchInsights = async () => {
     setLoading(true);
@@ -17,9 +19,11 @@ export default function AIAnalyst() {
       if (res.ok) {
         const data = await res.json();
         setInsights(data);
+      } else {
+        setErrorMsg('Unable to load insights. Please try again.');
       }
     } catch (err) {
-      console.error(err);
+      setErrorMsg('Unable to connect to the server. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -31,6 +35,8 @@ export default function AIAnalyst() {
 
   const handleGenerate = async () => {
     setGenerating(true);
+    setErrorMsg('');
+    setSuccessMsg('');
     const token = localStorage.getItem('ksp_token');
     try {
       const res = await fetch(`${API_URL}/ai/generate-insights`, {
@@ -38,30 +44,53 @@ export default function AIAnalyst() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        alert('Insights generated successfully!');
+        setSuccessMsg('AI analysis completed. New insights have been generated.');
         fetchInsights();
       } else {
-        alert('Failed to generate insights');
+        setErrorMsg('Failed to run AI analysis. Please try again.');
       }
     } catch (err) {
-      console.error(err);
-      alert('Error generating insights');
+      setErrorMsg('Unable to connect to the server. Please check your connection.');
     } finally {
       setGenerating(false);
     }
   };
 
   return (
-    <div className="page-body">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+    <>
+      <div className="page-header">
         <div>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>AI Analyst</h2>
-          <p style={{ fontSize: '12px', color: '#94a3b8' }}>Automated anomaly detection and strategic recommendations</p>
+          <h2>AI Analyst</h2>
+          <div className="page-header-sub">Karnataka State Police — Automated Intelligence Analysis</div>
         </div>
         <button className="btn btn-primary" onClick={handleGenerate} disabled={generating}>
-          {generating ? 'Analyzing Data...' : 'Run Analysis AI'}
+          {generating ? 'Analysing Data...' : 'Run Analysis AI'}
         </button>
       </div>
+
+      <div className="page-body">
+        <div className="page-intro">
+          <div className="page-intro-icon">🧠</div>
+          <div className="page-intro-content">
+            <div className="page-intro-title">AI-Powered Crime Analysis</div>
+            <div className="page-intro-desc">
+              Automatically scans the crime database for statistical anomalies, emerging trends, and strategic patterns.
+              Generates categorised insights (critical alerts, warnings, observations) to assist command-level decision making.
+              Click “Run Analysis AI” to generate fresh insights.
+            </div>
+          </div>
+        </div>
+
+        {errorMsg && (
+          <div className="error-banner" style={{ marginBottom: 16 }}>
+            <span style={{ marginRight: 8 }}>⚠</span>{errorMsg}
+          </div>
+        )}
+        {successMsg && (
+          <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#6ee7b7', padding: '10px 14px', borderRadius: '6px', marginBottom: 16, fontSize: 13 }}>
+            ✓ {successMsg}
+          </div>
+        )}
 
       {loading && insights.length === 0 ? (
         <div className="loading"><div className="spinner"></div>Loading Insights...</div>
@@ -113,6 +142,7 @@ export default function AIAnalyst() {
           )}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

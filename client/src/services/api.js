@@ -22,11 +22,9 @@ async function request(endpoint, options = {}) {
   try {
     data = text ? JSON.parse(text) : {};
   } catch (err) {
-    console.warn('[API] Failed to parse JSON response for', endpoint, err.message, 'raw:', text);
     data = { error: text || 'Invalid JSON response' };
   }
   if (res.status === 401 || res.status === 403) {
-    console.warn('[API] Unauthorized response for', endpoint, res.status, data.error || text);
     throw new Error(data.error || 'Unauthorized');
   }
   if (!res.ok) {
@@ -112,12 +110,10 @@ async function requestFormData(endpoint, formData) {
   let data;
   try {
     data = text ? JSON.parse(text) : {};
-  } catch (err) {
-    console.warn('[API] Failed to parse JSON response for', endpoint, err.message, 'raw:', text);
-    data = { error: text || 'Invalid JSON response' };
+  } catch {
+    data = { error: text || 'Invalid server response' };
   }
   if (res.status === 401 || res.status === 403) {
-    console.warn('[API] Unauthorized response for', endpoint, res.status, data.error || text);
     throw new Error(data.error || 'Unauthorized');
   }
   if (!res.ok) throw new Error(data.error || 'Upload failed');

@@ -3,15 +3,18 @@ import { useState, useEffect } from 'react';
 const API_URL = '/api';
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState('users'); // 'users' or 'audit'
+  const [activeTab, setActiveTab] = useState('users');
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddUser, setShowAddUser] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [newUser, setNewUser] = useState({ username: '', password: '', email: '', full_name: '', role: 'OFFICER', department: '', badge_number: '' });
 
   const fetchData = async () => {
     setLoading(true);
+    setErrorMsg('');
     const token = localStorage.getItem('ksp_token');
     const headers = { 'Authorization': `Bearer ${token}` };
     try {
@@ -20,16 +23,20 @@ export default function Admin() {
         if (res.ok) {
           const data = await res.json();
           setUsers(data.users || []);
+        } else {
+          setErrorMsg('Failed to load users.');
         }
       } else {
         const res = await fetch(`${API_URL}/auth/audit-logs?limit=100`, { headers });
         if (res.ok) {
           const data = await res.json();
           setLogs(data.logs);
+        } else {
+          setErrorMsg('Failed to load audit logs.');
         }
       }
     } catch (err) {
-      console.error(err);
+      setErrorMsg('Unable to connect to the server. Please refresh the page.');
     } finally {
       setLoading(false);
     }
@@ -41,6 +48,7 @@ export default function Admin() {
 
   const handleAddUser = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
     const token = localStorage.getItem('ksp_token');
     try {
       const res = await fetch(`${API_URL}/auth/create-user`, {
@@ -49,21 +57,21 @@ export default function Admin() {
         body: JSON.stringify(newUser)
       });
       if (res.ok) {
-        alert('User created successfully');
+        setSuccessMsg('User created successfully.');
         setShowAddUser(false);
         setNewUser({ username: '', password: '', email: '', full_name: '', role: 'OFFICER', department: '', badge_number: '' });
         fetchData();
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to create user');
+        setErrorMsg(data.error || 'Failed to create user. Please check the details.');
       }
     } catch (err) {
-      alert('Error creating user');
+      setErrorMsg('Unable to connect to the server.');
     }
   };
 
   const handleDeactivate = async (id) => {
-    if (!window.confirm('Are you sure you want to deactivate this user?')) return;
+    if (!window.confirm('Deactivate this user account?')) return;
     const token = localStorage.getItem('ksp_token');
     try {
       const res = await fetch(`${API_URL}/auth/users/${id}`, {
@@ -74,24 +82,47 @@ export default function Admin() {
         fetchData();
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to deactivate user');
+        setErrorMsg(data.error || 'Failed to deactivate user.');
       }
     } catch (err) {
-      alert('Error deactivating user');
+      setErrorMsg('Unable to connect to the server.');
     }
   };
 
   return (
-    <div className="page-body">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+    <>
+      <div className="page-header">
         <div>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>Administration Panel</h2>
-          <p style={{ fontSize: '12px', color: '#94a3b8' }}>System configuration and access control</p>
+          <h2>Administration Panel</h2>
+          <div className="page-header-sub">Karnataka State Police — System Configuration &amp; Access Control</div>
         </div>
         {activeTab === 'users' && (
-          <button className="btn btn-primary" onClick={() => setShowAddUser(true)}>+ Add User</button>
+          <button className="btn btn-primary" onClick={() => { setSuccessMsg(''); setErrorMsg(''); setShowAddUser(true); }}>+ Add User</button>
         )}
       </div>
+
+      <div className="page-body">
+        <div className="page-intro">
+          <div className="page-intro-icon">⚙️</div>
+          <div className="page-intro-content">
+            <div className="page-intro-title">Administration &amp; Access Control</div>
+            <div className="page-intro-desc">
+              Manage platform user accounts and review system audit logs. Only administrators can create, modify,
+              or deactivate user accounts. All actions are logged for compliance and security review.
+            </div>
+          </div>
+        </div>
+
+        {errorMsg && (
+          <div className="error-banner" style={{ marginBottom: 16 }}>
+            <span style={{ marginRight: 8 }}>⚠</span>{errorMsg}
+          </div>
+        )}
+        {successMsg && (
+          <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: '#6ee7b7', padding: '10px 14px', borderRadius: '6px', marginBottom: 16, fontSize: 13 }}>
+            ✓ {successMsg}
+          </div>
+        )}
 
       <div className="tabs">
         <button className={`tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>User Management</button>
@@ -226,6 +257,7 @@ export default function Admin() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

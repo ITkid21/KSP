@@ -48,8 +48,8 @@ export default function CrimeMap() {
     if (filters.crime_type) params.crime_type = filters.crime_type;
     if (filters.district) params.district = filters.district;
     if (filters.severity) params.severity = filters.severity;
-    mapApi.getLocations(params).then(setLocations).catch(console.error);
-    mapApi.getHeatmapData(filters.crime_type || undefined).then(setHeatmapData).catch(console.error);
+    mapApi.getLocations(params).then(setLocations).catch(() => {});
+    mapApi.getHeatmapData(filters.crime_type || undefined).then(setHeatmapData).catch(() => {});
   }, [filters.crime_type, filters.district, filters.severity]);
 
   async function loadInitialData() {
@@ -60,7 +60,7 @@ export default function CrimeMap() {
       ]);
       setLocations(locs); setClusters(cl); setHeatmapData(heat);
       setDistricts(dist); setCrimeTypes(ct);
-    } catch (err) { console.error(err); }
+    } catch (err) { /* silently handled */ }
     finally { setLoading(false); }
   }
 
@@ -82,6 +82,21 @@ export default function CrimeMap() {
       </div>
 
       <div className="page-body" style={{padding:16}}>
+        {/* Page Introduction */}
+        <div className="page-intro" style={{ marginBottom: 12 }}>
+          <div className="page-intro-icon">🗺️</div>
+          <div className="page-intro-content">
+            <div className="page-intro-title">GIS Crime Map</div>
+            <div className="page-intro-desc">
+              <strong>Description:</strong> Interactive geographical information system mapping crime frequency, intensity, and clustering using Leaflet.js and OpenStreetMap.
+              <br />
+              <strong>Purpose:</strong> To visualize geospatial distribution of crimes and identify physical hot zones to improve patrol efficiency.
+              <br />
+              <strong>Instructions:</strong> Use the Layer selector to toggle between individual Markers, Heatmap, or District Clusters. Apply filters for crime type, district, and severity to isolate trends.
+            </div>
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="filter-bar">
           <div className="form-group">
